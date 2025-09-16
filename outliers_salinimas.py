@@ -1,0 +1,53 @@
+import pandas as pd
+import seaborn as sns
+import matplotlib.pyplot as plt
+import os
+
+df = pd.read_csv('EKG_pupsniu_analize_uzpildyta_vidurkiais.csv', sep=';')
+
+columns = [col for col in df.columns if col.lower() != 'label']
+
+os.makedirs('images', exist_ok=True)
+
+# Išskirčių printinimas
+for col in columns:
+    sns.boxplot(df[col])
+    plt.grid(axis='x')
+    plt.title(f'Boxplot of {col}')
+    plt.savefig(f'images/boxplot_{col.replace('/', '_')}')
+    plt.close()
+
+
+
+# Išskirčių šalinimas
+index_set = set()
+for col in columns:
+    Q1 = df[col].quantile(0.25)
+    Q3 = df[col].quantile(0.75)
+    H = Q3 - Q1
+
+    inner_lower = Q1 - 1.5 * H
+    inner_upper = Q3 + 1.5 * H
+
+    outer_lower = Q1 - 3 * H
+    outer_upper = Q3 + 3 * H
+
+    extreme_outliers = df[(df[col] < outer_lower) | (df[col] > outer_upper)]
+    mild_outliers = df[((df[col] >= outer_lower) & (df[col] < inner_lower)) |
+                   ((df[col] > inner_upper) & (df[col] <= outer_upper))]
+
+    index_set.update(extreme_outliers.index)
+
+    print(f"\nColumn: {col}")
+    print(f"Q1: {Q1}")
+    print(f"Q3: {Q3}")
+    print(f"Inner limits: [{inner_lower:.3f}, {inner_upper:.3f}]")
+    print(f"Outer limits: [{outer_lower:.3f}, {outer_upper:.3f}]")
+    print(f"Mild outliers: {len(mild_outliers)}")
+    print(f"Extreme outliers: {len(extreme_outliers)}")
+
+print(f'\n{sorted(index_set)}\n')
+
+df_cleaned = df.drop(index_set).reset_index(drop=True)
+
+df_cleaned.to_csv('EKG_pupsniu_analize_be_isskirciu.csv', index=False, sep=';')
