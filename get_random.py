@@ -3,7 +3,7 @@ import pandas as pd
 df = pd.read_csv('EKG_pupsniu_analize.csv', sep=';')
 
 # 1. Žingsnis, atsirinkti duomenys pagal klases 3x500
-df_balanced = df.groupby('label', group_keys=False).apply(lambda x: x.sample(n=500, random_state=42))
+df_balanced = df.groupby('label', group_keys=False).apply(lambda x: x.sample(n=500, random_state=22))
 
 df_balanced = df_balanced.reset_index(drop=True)
 
