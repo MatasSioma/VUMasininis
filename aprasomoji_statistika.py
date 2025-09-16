@@ -1,4 +1,5 @@
 import pandas as pd
+from tabulate import tabulate
 
 df = pd.read_csv('EKG_pupsniu_analize_subalansuota.csv', sep=';')
 
@@ -22,9 +23,9 @@ for column in columns:
 print("\n##################### 1 KLASĖ #####################")
 for column in columns:
     print("\n################", column.upper(), "################\n")
-    print(df_0[column].describe())
-    print('Mediana:' ,df_0[column].median())
-    print('Moda: ', df_0[column].mode())
+    print(df_1[column].describe())
+    print('Mediana:' ,df_1[column].median())
+    print('Moda: ', df_1[column].mode())
 
 
 
@@ -32,9 +33,9 @@ for column in columns:
 print("\n##################### 2 KLASĖ #####################")
 for column in columns:
     print("\n################", column.upper(), "################\n")
-    print(df_0[column].describe())
-    print('Mediana:' ,df_0[column].median())
-    print('Moda: ', df_0[column].mode())
+    print(df_2[column].describe())
+    print('Mediana:' ,df_2[column].median())
+    print('Moda: ', df_2[column].mode())
 
 
 
