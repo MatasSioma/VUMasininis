@@ -11,7 +11,7 @@ os.makedirs(base_dir, exist_ok=True)
 
 for col in columns:
     plt.figure(figsize=(6, 4))
-    plt.hist(df[col], bins=40, edgecolor='black', alpha=0.7)
+    plt.hist(df[col], bins=40, edgecolor='black', color='#542788', alpha=0.7)
     plt.xlabel(col)
     plt.ylabel('Dažnis')
     plt.title(f'{col} reikšmių dažnio diagrama')
