@@ -8,7 +8,7 @@ df_balanced = df.groupby('label', group_keys=False).apply(lambda x: x.sample(n=5
 df_balanced = df_balanced.reset_index(drop=True)
 
 # 2. Žingsnis, atsirinkti savo pasirinktus požymius
-pozymiai = ['R_val', 'S_val', 'RR_l_0/RR_l_1', 'signal_mean', 'signal_std', 'seq_size', 'label']
+pozymiai = ['Q_val', 'R_val', 'S_val', 'RR_l_0/RR_l_1', 'signal_std', 'seq_size', 'label']
 
 df_tik_su_pozymiais = df_balanced[pozymiai]
 

@@ -1,9 +1,8 @@
 import pandas as pd
-import seaborn as sns
 import matplotlib.pyplot as plt
 import os
 
-df = pd.read_csv('EKG_pupsniu_analize_uzpildyta_vidurkiais.csv', sep=';')
+df = pd.read_csv('EKG_pupsniu_analize_uzpildyta_medianomis.csv', sep=';')
 
 columns = [col for col in df.columns if col.lower() != 'label']
 

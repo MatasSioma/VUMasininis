@@ -39,4 +39,4 @@ for column in columns:
 print(df_pagal_moda[columns][df[columns].isnull().any(axis=1)])
 
 
-df_pagal_vidurki.to_csv('EKG_pupsniu_analize_uzpildyta_vidurkiais.csv', index=False, sep=';')
+df_pagal_mediana.to_csv('EKG_pupsniu_analize_uzpildyta_medianomis.csv', index=False, sep=';')
