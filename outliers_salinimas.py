@@ -49,6 +49,7 @@ for col in columns:
     print(f"Extreme outliers: {len(extreme_outliers)}")
 
 print(f'\n{sorted(index_set)}\n')
+print(f"Viso 'extreme' išskirčių: {len(index_set)}")
 
 df_cleaned = df.drop(index_set).reset_index(drop=True)
 
