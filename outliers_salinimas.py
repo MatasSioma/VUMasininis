@@ -6,7 +6,7 @@ df = pd.read_csv('EKG_pupsniu_analize_uzpildyta_medianomis.csv', sep=';')
 
 columns = [col for col in df.columns if col.lower() != 'label']
 
-os.makedirs('images', exist_ok=True)
+os.makedirs('grafikai/isskirtys', exist_ok=True)
 
 # Išskirčių printinimas
 for col in columns:
@@ -16,7 +16,7 @@ for col in columns:
     plt.suptitle("")
     plt.xlabel('Label')
     plt.ylabel(col)
-    plt.savefig(f'images/boxplot_{col.replace("/", "_")}_by_label.png')
+    plt.savefig(f'grafikai/isskirtys/{col.replace("/", "_")}_by_label.png')
     plt.close()
 
 
