@@ -1,5 +1,6 @@
 EKG_pupsniu_analize.csv
-images/*
+images
+grafikai
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
