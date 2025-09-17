@@ -11,10 +11,13 @@ os.makedirs('images', exist_ok=True)
 
 # Išskirčių printinimas
 for col in columns:
-    sns.boxplot(df[col])
-    plt.grid(axis='x')
-    plt.title(f'Boxplot of {col}')
-    plt.savefig(f'images/boxplot_{col.replace('/', '_')}')
+    plt.figure()
+    df.boxplot(column=col, by='label', grid=False)
+    plt.title(f'Boxplot of {col} by label')
+    plt.suptitle("")
+    plt.xlabel('Label')
+    plt.ylabel(col)
+    plt.savefig(f'images/boxplot_{col.replace("/", "_")}_by_label.png')
     plt.close()
 
 
