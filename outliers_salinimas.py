@@ -23,6 +23,7 @@ for col in columns:
 
 
 # Išskirčių šalinimas
+mild_outliers_set = set()
 index_set = set()
 for col in columns:
     Q1 = df[col].quantile(0.25)
@@ -40,6 +41,7 @@ for col in columns:
                    ((df[col] > inner_upper) & (df[col] <= outer_upper))]
 
     index_set.update(extreme_outliers.index)
+    mild_outliers_set.update(mild_outliers.index)
 
     table_data = [
         ["Q1", Q1],
@@ -55,6 +57,8 @@ for col in columns:
 
 print(f'\nŠalinamos eilutės: {sorted(index_set)}\n')
 print(f"Viso 'extreme' išskirčių: {len(index_set)}")
+
+print(f"Viso 'mild' išskirčių: {len(mild_outliers_set)}")
 
 df_cleaned = df.drop(index_set).reset_index(drop=True)
 
