@@ -62,4 +62,6 @@ print(f"Viso 'mild' išskirčių: {len(mild_outliers_set)}")
 
 df_cleaned = df.drop(index_set).reset_index(drop=True)
 
+print(f"Likes eiluciu kiekis: {df_cleaned.shape[0]}")
+
 df_cleaned.to_csv('EKG_pupsniu_analize_be_isskirciu.csv', index=False, sep=';')
