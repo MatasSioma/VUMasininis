@@ -29,7 +29,7 @@ df_pagal_mediana = df.copy()
 for column in columns:
     df_pagal_mediana[column] = df_pagal_mediana[column].fillna(df_pagal_mediana[column].median()).round(4)
 
-uzpildyta_mediana = df_pagal_vidurki[columns][df[columns].isnull().any(axis=1)]
+uzpildyta_mediana = df_pagal_mediana[columns][df[columns].isnull().any(axis=1)]
 print(tabulate(uzpildyta_mediana, headers='keys', tablefmt='fancy_grid', showindex=True))
 
 # Praleistų reikšmių užpildymas pagal modą
@@ -38,7 +38,7 @@ df_pagal_moda = df.copy()
 for column in columns:
     df_pagal_moda[column] = df_pagal_moda[column].fillna(df_pagal_moda[column].mode()[0]).round(4)
 
-uzpildyta_moda = df_pagal_vidurki[columns][df[columns].isnull().any(axis=1)]
+uzpildyta_moda = df_pagal_moda[columns][df[columns].isnull().any(axis=1)]
 print(tabulate(uzpildyta_moda, headers='keys', tablefmt='fancy_grid', showindex=True))
 
 
