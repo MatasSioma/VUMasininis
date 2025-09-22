@@ -18,7 +18,7 @@ else:
 print("\n##################### PAGAL VIDURKĮ #####################\n")
 df_pagal_vidurki = df.copy()
 for column in columns:
-    df_pagal_vidurki[column] = df_pagal_vidurki[column].fillna(df_pagal_vidurki.groupby('label')[column].transform('mean')).round(4)
+    df_pagal_vidurki[column] = df_pagal_vidurki[column].fillna(df_pagal_vidurki[column].mean()).round(4)
 
 uzpildyta_vidurkiu = df_pagal_vidurki[columns][df[columns].isnull().any(axis=1)]
 print(tabulate(uzpildyta_vidurkiu, headers='keys', tablefmt='fancy_grid', showindex=True))
@@ -27,7 +27,7 @@ print(tabulate(uzpildyta_vidurkiu, headers='keys', tablefmt='fancy_grid', showin
 print("\n##################### PAGAL MEDIANĄ #####################\n")
 df_pagal_mediana = df.copy()
 for column in columns:
-    df_pagal_mediana[column] = df_pagal_mediana[column].fillna(df_pagal_mediana.groupby('label')[column].transform('median')).round(4)
+    df_pagal_mediana[column] = df_pagal_mediana[column].fillna(df_pagal_mediana[column].median()).round(4)
 
 uzpildyta_mediana = df_pagal_vidurki[columns][df[columns].isnull().any(axis=1)]
 print(tabulate(uzpildyta_mediana, headers='keys', tablefmt='fancy_grid', showindex=True))
@@ -36,7 +36,7 @@ print(tabulate(uzpildyta_mediana, headers='keys', tablefmt='fancy_grid', showind
 print("\n##################### PAGAL MODĄ #####################\n")
 df_pagal_moda = df.copy()
 for column in columns:
-    df_pagal_moda[column] = df_pagal_moda[column].fillna(df_pagal_moda.groupby('label')[column].transform(lambda x: x.mode()[0])).round(4)
+    df_pagal_moda[column] = df_pagal_moda[column].fillna(df_pagal_moda[column].mode()[0]).round(4)
 
 uzpildyta_moda = df_pagal_vidurki[columns][df[columns].isnull().any(axis=1)]
 print(tabulate(uzpildyta_moda, headers='keys', tablefmt='fancy_grid', showindex=True))
