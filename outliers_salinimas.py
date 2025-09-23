@@ -27,7 +27,7 @@ index_set = set()
 for col in columns:
     print(f"\n=== Stulpelis: {col} ===")
 
-    rows = []  # kaupsime kiekvienos klasės rodiklius
+    rows = []
 
     for klasė, grupė in df.groupby('label'):
         # Skaičiavimai konkrečiai klasei
