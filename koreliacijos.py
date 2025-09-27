@@ -7,7 +7,7 @@ from tabulate import tabulate
 base_dir = 'grafikai/koreliacijos'
 os.makedirs(base_dir, exist_ok=True)
 
-df = pd.read_csv('EKG_pupsniu_analize_normalizuota_pagal_minmax.csv', sep=';')
+df = pd.read_csv('EKG_pupsniu_analize_normuota_pagal_minmax.csv', sep=';')
 
 columns = [col for col in df.columns if col.lower() != 'label']
 labels = sorted(df['label'].unique(), key=lambda x: str(x))

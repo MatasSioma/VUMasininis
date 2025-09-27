@@ -2,7 +2,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import os
 
-df = pd.read_csv('EKG_pupsniu_analize_normalizuota_pagal_minmax.csv', sep=';')
+df = pd.read_csv('EKG_pupsniu_analize_normuota_pagal_minmax.csv', sep=';')
 
 columns = [col for col in df.columns if col.lower() != 'label']
 

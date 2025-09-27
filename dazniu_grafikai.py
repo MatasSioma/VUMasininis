@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 base_dir = 'grafikai/dazniai'
 os.makedirs(base_dir, exist_ok=True)
 
-df = pd.read_csv('EKG_pupsniu_analize_normalizuota_pagal_minmax.csv', sep=';')
+df = pd.read_csv('EKG_pupsniu_analize_normuota_pagal_minmax.csv', sep=';')
 
 label_kiekis = df['label'].value_counts()
 
