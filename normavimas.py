@@ -4,7 +4,7 @@ from tabulate import tabulate
 df = pd.read_csv('EKG_pupsniu_analize_be_isskirciu.csv', sep=';')
 columns = [col for col in df.columns if col.lower() != 'label']
 
-# Min-max normalizavimas
+# Min-max normavimas
 df_minmax = df.copy()
 print("\n##################### PRIEŠ MIN-MAX NORMALIZAVIMĄ #####################\n")
 print(tabulate(df_minmax.head(), headers='keys', tablefmt='fancy_grid', showindex=True))
@@ -21,7 +21,7 @@ for col in columns:
 
 df_minmax.to_csv('EKG_pupsniu_analize_normalizuota_pagal_minmax.csv', index=False, sep=';')
 
-# Normalizavimas pagal vidurkį
+# Normavimas pagal vidurkį
 df_z_reiksme = df.copy()
 print("\n##################### PRIEŠ NORMALIZAVIMĄ PAGAL VIDURKĮ IR DISPERSIJĄ #####################\n")
 print(tabulate(df_z_reiksme.head(), headers='keys', tablefmt='fancy_grid', showindex=True))
