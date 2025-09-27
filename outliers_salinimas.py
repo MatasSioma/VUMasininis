@@ -7,13 +7,13 @@ df = pd.read_csv('EKG_pupsniu_analize_uzpildyta_medianomis.csv', sep=';')
 
 columns = [col for col in df.columns if col.lower() != 'label']
 
-os.makedirs('grafikai/isskirtys', exist_ok=True)
+os.makedirs('grafikai/pries-isskirciu-salinima', exist_ok=True)
 
 # Išskirčių printinimas
 for col in columns:
     plt.figure()
     df.boxplot(column=col, by='label', grid=False)
-    plt.savefig(f'grafikai/isskirtys/{col.replace("/", "_")}_pagal_klase.png')
+    plt.savefig(f'grafikai/pries-isskirciu-salinima/{col.replace("/", "_")}_pagal_klase.png')
     plt.close()
 
 
@@ -60,6 +60,15 @@ print(f"Viso 'extreme' išskirčių: {len(index_set)}")
 print(f"Viso 'mild' išskirčių: {len(mild_outliers_set)}")
 
 df_cleaned = df.drop(index_set).reset_index(drop=True)
+
+os.makedirs('grafikai/po-isskirciu-salinimo', exist_ok=True)
+
+# Išskirčių printinimas
+for col in columns:
+    plt.figure()
+    df_cleaned.boxplot(column=col, by='label', grid=False)
+    plt.savefig(f'grafikai/po-isskirciu-salinimo/{col.replace("/", "_")}_pagal_klase.png')
+    plt.close()
 
 
 print(f"Likes eiluciu kiekis: {df_cleaned.shape[0]}")
