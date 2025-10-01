@@ -36,7 +36,9 @@ print(tabulate(uzpildyta_mediana, headers='keys', tablefmt='fancy_grid', showind
 print("\n##################### PAGAL MODĄ #####################\n")
 df_pagal_moda = df.copy()
 for column in columns:
-    df_pagal_moda[column] = df_pagal_moda.groupby('label')[column].transform(lambda x: x.mode()[0]).round(4)
+    df_pagal_moda[column] = df_pagal_moda.groupby('label')[column].transform(
+            lambda x: x.fillna(x.mode()[0]) if not x.mode().empty else x
+        ).round(4)
 
 uzpildyta_moda = df_pagal_moda[columns][df[columns].isnull().any(axis=1)]
 print(tabulate(uzpildyta_moda, headers='keys', tablefmt='fancy_grid', showindex=True))
