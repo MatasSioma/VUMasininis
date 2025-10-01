@@ -62,14 +62,13 @@ print(f"Viso 'mild' išskirčių: {len(mild_outliers_set)}")
 df_cleaned = df.drop(index_set).reset_index(drop=True)
 
 
-df_likutis_pagal_klases = df_cleaned['label'].value_counts().sort_index()
 print("\n" + "="*60)
 print("LIKĘS DUOMENŲ KIEKIS PAGAL KLASES")
 print("="*60)
 
+df_likutis_pagal_klases = df_cleaned['label'].value_counts().sort_index()
 likusi_lentele = [[label, count] for label, count in df_likutis_pagal_klases.items()]
 print(tabulate(likusi_lentele, headers=['Klasė', 'Kiekis'], tablefmt='fancy_grid'))
-print(f"\nIš viso: {df_cleaned.shape[0]}")
 
 
 print(f"Likęs eilučių kiekis: {df_cleaned.shape[0]}")
