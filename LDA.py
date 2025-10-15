@@ -1,12 +1,13 @@
 import pandas as pd
 import numpy as np
+import os
 import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.preprocessing import StandardScaler
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 
 # Duomenų įkėlimas
-df = pd.read_csv("EKG_pupsniu_analize_uzpildyta_medianomis.csv", sep=";")
+df = pd.read_csv("EKG_pupsniu_analize_normuota_pagal_minmax.csv", sep=";")
 
 # Požymių ir klasių atskyrimas
 X = df[["Q_val", "R_val", "S_val", "RR_l_0/RR_l_1", "signal_std", "seq_size"]]
@@ -23,6 +24,8 @@ X_lda = lda.fit_transform(X_scaled, y)
 # Rezultatai sudedami į DataFrame
 lda_df = pd.DataFrame(X_lda, columns=['LD1', 'LD2'])
 lda_df['Class'] = y
+
+os.makedirs('grafikai/LDA', exist_ok=True)
 
 # Outlier'iu identifikavimas pagal IQR metodą kiekvienai klasei
 
@@ -68,18 +71,18 @@ palette_dict = dict(zip(class_order, palette))
 # Pagrindiniai taškai
 sns.scatterplot(
     data=lda_df[lda_df['Outlier']=='None'],
-    x='LD1', y='LD2', hue='Class', palette=palette_dict, s=80, edgecolor=None
+    x='LD1', y='LD2', hue='Class', palette=palette_dict, s=50, edgecolor=None
 )
 
 # Mild outlieriu vizualizacija
 for cls in class_order:
     subset = lda_df[(lda_df['Class'] == cls) & (lda_df['Outlier'] == 'Mild')]
-    plt.scatter(subset['LD1'], subset['LD2'], s=80, facecolors=palette_dict[cls], edgecolors='black', linewidths=1.5, label=None)
+    plt.scatter(subset['LD1'], subset['LD2'], s=50, facecolors=palette_dict[cls], edgecolors='black', linewidths=1.5, label=None)
 
 # Extreme outlieriu vizualizacija
 for cls in class_order:
     subset = lda_df[(lda_df['Class'] == cls) & (lda_df['Outlier'] == 'Extreme')]
-    plt.scatter(subset['LD1'], subset['LD2'], s=80, facecolors=palette_dict[cls], edgecolors='aqua', linewidths=1.5, label=None)
+    plt.scatter(subset['LD1'], subset['LD2'], s=50, facecolors=palette_dict[cls], edgecolors='aqua', linewidths=1.5, label=None)
 
 plt.title('LDA vizualizacija')
 plt.legend(title='Klasė')

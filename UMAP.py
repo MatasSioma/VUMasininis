@@ -60,7 +60,7 @@ plt.scatter(
     umap_2d[normal_indices, 0],
     umap_2d[normal_indices, 1],
     c=[colors[i] for i in normal_indices],
-    s=40,
+    s=50,
     alpha=0.8,
     linewidths=0
 )
@@ -70,7 +70,7 @@ plt.scatter(
     umap_2d[mild_indices, 0],
     umap_2d[mild_indices, 1],
     c=[colors[i] for i in mild_indices],
-    s=40,
+    s=50,
     alpha=0.9,
     edgecolors='black',
     linewidths=0.6,
@@ -82,7 +82,7 @@ plt.scatter(
     umap_2d[extreme_indices, 0],
     umap_2d[extreme_indices, 1],
     c=[colors[i] for i in extreme_indices],
-    s=40,
+    s=50,
     alpha=0.95,
     edgecolors='#00FFFF',
     linewidths=0.6,

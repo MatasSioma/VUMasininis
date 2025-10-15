@@ -8,8 +8,7 @@ import inspect
 # Parameters
 PERPLEXITY = 30
 LEARNING_RATE = 200
-MAX_ITER = 1000          # preferred name in newer sklearn
-RANDOM_STATE = 42
+MAX_ITER = 1000
 
 # Load data
 df = pd.read_csv('EKG_pupsniu_analize_normuota_pagal_minmax.csv', sep=';')
@@ -54,7 +53,6 @@ tsne = TSNE(
     perplexity=PERPLEXITY,
     max_iter=MAX_ITER,
     learning_rate=LEARNING_RATE,
-    random_state=RANDOM_STATE,
     init='pca',
     verbose=1
 ).fit_transform(X)
@@ -73,7 +71,7 @@ plt.scatter(
     tsne[normal_indices, 0],
     tsne[normal_indices, 1],
     c=[colors[i] for i in normal_indices],
-    s=40, alpha=0.8, linewidths=0
+    s=50, alpha=0.8, linewidths=0
 )
 
 # Mild outliers – black border
@@ -83,7 +81,7 @@ if mild_indices:
         tsne[mild_indices, 0],
         tsne[mild_indices, 1],
         c=[colors[i] for i in mild_indices],
-        s=40, alpha=0.9,
+        s=50, alpha=0.9,
         edgecolors='black', linewidths=0.6,
         label='Sąlyginės išskirtys'
     )
@@ -95,7 +93,7 @@ if extreme_indices:
         tsne[extreme_indices, 0],
         tsne[extreme_indices, 1],
         c=[colors[i] for i in extreme_indices],
-        s=40, alpha=0.9,
+        s=50, alpha=0.9,
         edgecolors='#00FFFF', linewidths=0.6,
         label='Nesąlyginės išskirtys'
     )
