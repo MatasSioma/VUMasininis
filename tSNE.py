@@ -11,7 +11,7 @@ LEARNING_RATE = 200
 MAX_ITER = 1000
 
 # Load data
-df = pd.read_csv('EKG_pupsniu_analize_normuota_pagal_minmax.csv', sep=';')
+df = pd.read_csv("pilna_EKG_pupsniu_analize_normuota_pagal_minmax.csv", sep=";")
 columns = [col for col in df.columns if col.lower() != 'label']
 X = df[columns].values
 y = df['label'].values

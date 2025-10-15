@@ -7,7 +7,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 
 # Duomenų įkėlimas
-df = pd.read_csv("EKG_pupsniu_analize_normuota_pagal_minmax.csv", sep=";")
+df = pd.read_csv("pilna_EKG_pupsniu_analize_normuota_pagal_minmax.csv", sep=";")
 
 # Požymių ir klasių atskyrimas
 X = df[["Q_val", "R_val", "S_val", "RR_l_0/RR_l_1", "signal_std", "seq_size"]]
