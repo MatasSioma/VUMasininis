@@ -10,16 +10,26 @@ LEARNING_RATE = 200
 MAX_ITER = 1000
 
 # === Duomenų įkėlimas ===
-df_nenormuota = pd.read_csv("EKG_pupsniu_analize_uzpildyta_medianomis.csv", sep=";")
-df_normuota = pd.read_csv("pilna_EKG_pupsniu_analize_normuota_pagal_minmax.csv", sep=";")
+df_nenormuota_su_atrinktais = pd.read_csv("EKG_pupsniu_analize_uzpildyta_medianomis.csv", sep=";")
+df_normuota_su_atrinktais = pd.read_csv("pilna_EKG_pupsniu_analize_normuota_pagal_minmax.csv", sep=";")
 
-columns = [col for col in df_normuota.columns if col.lower() != 'label']
+df_nenormuota_su_visais = pd.read_csv("EKG_pupsniu_analize_uzpildyta_medianomis_visi.csv", sep=";")
+df_normuota_su_visais = pd.read_csv("pilna_EKG_pupsniu_analize_uzpildyta_medianomis_visi_normuota_pagal_minmax.csv", sep=";")
 
-X_normuota = df_normuota[columns].values
-y_normuota = df_normuota['label'].values
+columns_su_atrinktais = [col for col in df_normuota_su_atrinktais.columns if col.lower() != 'label']
+columns_su_visais = [col for col in df_normuota_su_visais if col.lower() != 'label']
 
-X_nenormuota = df_nenormuota[columns].values
-y_nenormuota = df_nenormuota['label'].values
+X_normuota_su_atrinktais = df_normuota_su_atrinktais[columns_su_atrinktais].values
+Y_normuota_su_atrinktais = df_normuota_su_atrinktais['label'].values
+
+X_nenormuota_su_atrinktais = df_nenormuota_su_atrinktais[columns_su_atrinktais].values
+Y_nenormuota_su_atrinktais = df_nenormuota_su_atrinktais['label'].values
+
+X_normuota_su_visais = df_normuota_su_visais[columns_su_visais].values
+Y_normuota_su_visais = df_normuota_su_visais['label'].values
+
+X_nenormuota_su_visais = df_nenormuota_su_visais[columns_su_visais].values
+Y_nenormuota_su_visais = df_nenormuota_su_atrinktais['label'].values
 
 color_map = ["#71B1FA", "#87E775", "#E05C58"]
 
@@ -116,19 +126,27 @@ def plot_tsne(X, y, df, dataset_name, mild_outliers_set, extreme_outliers_set):
     plt.legend(handles=handles, title="Klasės / Išskirtys")
     plt.tight_layout()
 
-    output_path = f"{base_dir}/{dataset_name.lower()}.png"
+    output_path = f"{base_dir}/{dataset_name.lower().replace(' ', '_')}.png"
     plt.savefig(output_path, dpi=300)
     plt.close()
 
     print(f"Vizualizacija išsaugota: {output_path}")
 
 # === Paleidimas ===
-print("Apdorojama normuota duomenų aibė...")
-mild_normuota, extreme_normuota = detect_outliers(df_normuota, columns)
-plot_tsne(X_normuota, y_normuota, df_normuota, "Normuota", mild_normuota, extreme_normuota)
+print("Apdorojama normuota duomenų aibė (atrinkti požymiai)...")
+mild_normuota_su_atrinktais, extreme_normuota_su_atrinktais = detect_outliers(df_normuota_su_atrinktais, columns_su_atrinktais)
+plot_tsne(X_normuota_su_atrinktais, Y_normuota_su_atrinktais, df_normuota_su_atrinktais, "Normuota su atrinktais požymiais", mild_normuota_su_atrinktais, extreme_normuota_su_atrinktais)
 
-print("\nApdorojama nenormuota duomenų aibė...")
-mild_nenormuota, extreme_nenormuota = detect_outliers(df_nenormuota, columns)
-plot_tsne(X_nenormuota, y_nenormuota, df_nenormuota, "Nenormuota", mild_nenormuota, extreme_nenormuota)
+print("\nApdorojama nenormuota duomenų aibė (atrinkti požymiai)...")
+mild_nenormuota_su_atrinktais, extreme_nenormuota_su_atrinktais = detect_outliers(df_nenormuota_su_atrinktais, columns_su_atrinktais)
+plot_tsne(X_nenormuota_su_atrinktais, Y_nenormuota_su_atrinktais, df_nenormuota_su_atrinktais, "Nenormuota su atrinktais požymiais", mild_nenormuota_su_atrinktais, extreme_nenormuota_su_atrinktais)
 
-print("\n✓ Abi t-SNE vizualizacijos sėkmingai sukurtos ir išsaugotos")
+print("\nApdorojama nenormuota duomenų aibė (visi požymiai)...")
+mild_normuota_su_visais, extreme_normuota_su_visais = detect_outliers(df_normuota_su_visais, columns_su_visais)
+plot_tsne(X_normuota_su_visais, Y_normuota_su_visais, df_normuota_su_visais, "Normuota su visais požymiais", mild_normuota_su_visais, extreme_normuota_su_visais)
+
+print("\nApdorojama nenormuota duomenų aibė (visi požymiai)...")
+mild_nenormuota_su_visais, extreme_nenormuota_su_visais = detect_outliers(df_nenormuota_su_visais, columns_su_visais)
+plot_tsne(X_nenormuota_su_visais, Y_nenormuota_su_visais, df_nenormuota_su_visais, "Nenormuota su visais požymiais", mild_nenormuota_su_visais, extreme_nenormuota_su_visais)
+
+print("\n✓ Visos keturios t-SNE vizualizacijos sėkmingai sukurtos ir išsaugotos")
