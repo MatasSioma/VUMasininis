@@ -95,7 +95,7 @@ def plot_tsne(X, y, df, dataset_name, mild_outliers_set, extreme_outliers_set):
             label='Sąlyginės išskirtys'
         )
 
-    # Nesąlyginės išskirtys – mėlynas kontūras (mediumBlue)
+    # Kritinės išskirtys – mėlynas kontūras (mediumBlue)
     extreme_indices = list(extreme_outliers_set)
     if extreme_indices:
         plt.scatter(
@@ -104,14 +104,14 @@ def plot_tsne(X, y, df, dataset_name, mild_outliers_set, extreme_outliers_set):
             c=[colors[i] for i in extreme_indices],
             s=50, alpha=0.9,
             edgecolors='mediumBlue', linewidths=1.2,
-            label='Nesąlyginės išskirtys'
+            label='Kritinės išskirtys'
         )
 
     # Legenda
     unique_labels = sorted(set(y))
     handles = [mpatches.Patch(color=color_map[i], label=f"Klasė {unique_labels[i]}") for i in range(len(unique_labels))]
     handles.append(mpatches.Patch(edgecolor='black', facecolor='white', label='Sąlyginės išskirtys'))
-    handles.append(mpatches.Patch(edgecolor='mediumBlue', facecolor='white', label='Nesąlyginės išskirtys'))
+    handles.append(mpatches.Patch(edgecolor='mediumBlue', facecolor='white', label='Kritinės išskirtys'))
 
     plt.legend(handles=handles, title="Klasės / Išskirtys")
     plt.tight_layout()
