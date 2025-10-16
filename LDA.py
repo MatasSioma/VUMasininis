@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 import os
 import matplotlib.pyplot as plt
+import matplotlib.lines as mlines
 import seaborn as sns
 from sklearn.preprocessing import StandardScaler
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
@@ -71,18 +72,41 @@ palette_dict = dict(zip(class_order, palette))
 # Pagrindiniai taškai
 sns.scatterplot(
     data=lda_df[lda_df['Outlier']=='None'],
-    x='LD1', y='LD2', hue='Class', palette=palette_dict, s=50, edgecolor=None
+    x='LD1', 
+    y='LD2', 
+    hue='Class', 
+    palette=palette_dict, 
+    s=50, 
+    edgecolor=None, 
+    alpha = 0.9
 )
 
 # Mild outlieriu vizualizacija
 for cls in class_order:
     subset = lda_df[(lda_df['Class'] == cls) & (lda_df['Outlier'] == 'Mild')]
-    plt.scatter(subset['LD1'], subset['LD2'], s=50, facecolors=palette_dict[cls], edgecolors='black', linewidths=1.5, label=None)
+    plt.scatter(
+        subset['LD1'], 
+        subset['LD2'], 
+        s=50, 
+        facecolors=palette_dict[cls], 
+        edgecolors='black', 
+        alpha = 0.9, 
+        linewidths=1.5, 
+        label=None
+    )
 
 # Extreme outlieriu vizualizacija
 for cls in class_order:
     subset = lda_df[(lda_df['Class'] == cls) & (lda_df['Outlier'] == 'Extreme')]
-    plt.scatter(subset['LD1'], subset['LD2'], s=50, facecolors=palette_dict[cls], edgecolors='aqua', linewidths=1.5, label=None)
+    plt.scatter(
+        subset['LD1'],
+        subset['LD2'],
+        s=50, facecolors=palette_dict[cls],
+        edgecolors='mediumBlue', 
+        alpha = 0.9,
+        linewidths=1.5, 
+        label=None
+    )
 
 plt.title('LDA vizualizacija')
 plt.legend(title='Klasė')

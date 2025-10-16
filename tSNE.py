@@ -82,7 +82,7 @@ if mild_indices:
         tsne[mild_indices, 1],
         c=[colors[i] for i in mild_indices],
         s=50, alpha=0.9,
-        edgecolors='black', linewidths=0.6,
+        edgecolors='black', linewidths=1,
         label='Sąlyginės išskirtys'
     )
 
@@ -94,7 +94,7 @@ if extreme_indices:
         tsne[extreme_indices, 1],
         c=[colors[i] for i in extreme_indices],
         s=50, alpha=0.9,
-        edgecolors='#00FFFF', linewidths=0.6,
+        edgecolors='mediumBlue', linewidths=1,
         label='Nesąlyginės išskirtys'
     )
 
@@ -102,7 +102,7 @@ if extreme_indices:
 unique_labels = sorted(set(y))
 handles = [mpatches.Patch(color=color_map[i], label=f"Klasė {unique_labels[i]}") for i in range(len(unique_labels))]
 handles.append(mpatches.Patch(edgecolor='black', facecolor='white', label='Sąlyginės išskirtys'))
-handles.append(mpatches.Patch(edgecolor='#00FFFF', facecolor='white', label='Nesąlyginės išskirtys'))
+handles.append(mpatches.Patch(edgecolor='mediumBlue', facecolor='white', label='Nesąlyginės išskirtys'))
 
 plt.legend(handles=handles, title="Klasės / Išskirtys")
 plt.tight_layout()

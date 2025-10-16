@@ -73,7 +73,7 @@ plt.scatter(
     s=50,
     alpha=0.9,
     edgecolors='black',
-    linewidths=0.6,
+    linewidths=1,
     label='Sąlyginės išskirtys'
 )
 
@@ -84,15 +84,15 @@ plt.scatter(
     c=[colors[i] for i in extreme_indices],
     s=50,
     alpha=0.95,
-    edgecolors='#00FFFF',
-    linewidths=0.6,
+    edgecolors='mediumBlue',
+    linewidths=1,
     label='Nesąlyginės išskirtys'
 )
 
 unique_labels = sorted(set(y))
 handles = [mpatches.Patch(color=color_map[i], label=f"Klasė {unique_labels[i]}") for i in range(len(unique_labels))]
 handles.append(mpatches.Patch(edgecolor='black', facecolor='white', label='Sąlyginės išskirtys'))
-handles.append(mpatches.Patch(edgecolor='#00FFFF', facecolor='white', label='Nesąlyginės išskirtys'))
+handles.append(mpatches.Patch(edgecolor='mediumBlue', facecolor='white', label='Nesąlyginės išskirtys'))
 
 plt.legend(handles=handles, title="Klasės / Išskirtys")
 plt.tight_layout()
