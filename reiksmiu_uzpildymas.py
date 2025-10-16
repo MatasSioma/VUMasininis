@@ -1,7 +1,20 @@
 import pandas as pd
 from tabulate import tabulate
 
-df = pd.read_csv('EKG_pupsniu_analize_subalansuota.csv', sep=';')
+# Pasirenkame su kuriuo failu dirbti
+print("Pasirinkite su kuriuo CSV failu norite dirbti:")
+print("1 - EKG_pupsniu_analize_subalansuota.csv")
+print("2 - EKG_pupsniu_analize_subalansuota_visi_pozymiai.csv")
+pasirinkimas = input("Įveskite 1 arba 2: ").strip()
+
+if pasirinkimas == "2":
+    csv_failas = "EKG_pupsniu_analize_subalansuota_visi_pozymiai.csv"
+    output_failas = "EKG_pupsniu_analize_uzpildyta_medianomis_visi.csv"
+else:
+    csv_failas = "EKG_pupsniu_analize_subalansuota.csv"
+    output_failas = "EKG_pupsniu_analize_uzpildyta_medianomis.csv"
+
+df = pd.read_csv(csv_failas, sep=';')
 
 columns = list(df.columns)
 print(columns)
@@ -44,4 +57,4 @@ uzpildyta_moda = df_pagal_moda[columns][df[columns].isnull().any(axis=1)]
 print(tabulate(uzpildyta_moda, headers='keys', tablefmt='fancy_grid', showindex=True))
 
 
-df_pagal_mediana.to_csv('EKG_pupsniu_analize_uzpildyta_medianomis.csv', index=False, sep=';')
+df_pagal_mediana.to_csv(output_failas, index=False, sep=';')

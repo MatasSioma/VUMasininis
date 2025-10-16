@@ -13,3 +13,7 @@ pozymiai = ['Q_val', 'R_val', 'S_val', 'RR_l_0/RR_l_1', 'signal_std', 'seq_size'
 df_tik_su_pozymiais = df_balanced[pozymiai].round(4)
 
 df_tik_su_pozymiais.to_csv('EKG_pupsniu_analize_subalansuota.csv', index=False, sep=';')
+
+# 3. Žingsnis, išsaugoti visus požymius su ta pačia subalansuota imtimi
+df_balanced = df_balanced.apply(pd.to_numeric, errors='ignore')
+df_balanced.round(4).to_csv('EKG_pupsniu_analize_subalansuota_visi_pozymiai.csv', index=False, sep=';')
