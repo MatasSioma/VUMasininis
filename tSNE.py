@@ -4,10 +4,12 @@ import os
 import matplotlib.patches as mpatches
 from sklearn.manifold import TSNE
 
+# === Parametrai ===
 PERPLEXITY = 30
 LEARNING_RATE = 200
 MAX_ITER = 1000
 
+# === Duomenų įkėlimas ===
 df_nenormuota = pd.read_csv("EKG_pupsniu_analize_uzpildyta_medianomis.csv", sep=";")
 df_normuota = pd.read_csv("pilna_EKG_pupsniu_analize_normuota_pagal_minmax.csv", sep=";")
 
@@ -21,6 +23,7 @@ y_nenormuota = df_nenormuota['label'].values
 
 color_map = ["#71B1FA", "#87E775", "#E05C58"]
 
+# === Išskirčių detekcija ===
 def detect_outliers(df, columns):
     mild_outliers_set = set()
     extreme_outliers_set = set()
@@ -47,6 +50,7 @@ def detect_outliers(df, columns):
 
     return mild_outliers_set, extreme_outliers_set
 
+# === Vizualizacija su t-SNE ===
 def plot_tsne(X, y, df, dataset_name, mild_outliers_set, extreme_outliers_set):
     colors = [color_map[int(c)] for c in y]
 
@@ -70,6 +74,7 @@ def plot_tsne(X, y, df, dataset_name, mild_outliers_set, extreme_outliers_set):
     plt.figure(figsize=(10, 7))
     plt.title(f't-SNE Dimensijos Mažinimas ({dataset_name})\nperplexity={PERPLEXITY}, lr={LEARNING_RATE}')
 
+    # Normalūs taškai
     normal_indices = [i for i in range(len(df)) if i not in mild_outliers_set and i not in extreme_outliers_set]
     plt.scatter(
         tsne[normal_indices, 0],
@@ -78,6 +83,7 @@ def plot_tsne(X, y, df, dataset_name, mild_outliers_set, extreme_outliers_set):
         s=50, alpha=0.8, linewidths=0
     )
 
+    # Sąlyginės išskirtys – juodas storesnis kontūras
     mild_indices = list(mild_outliers_set)
     if mild_indices:
         plt.scatter(
@@ -85,10 +91,11 @@ def plot_tsne(X, y, df, dataset_name, mild_outliers_set, extreme_outliers_set):
             tsne[mild_indices, 1],
             c=[colors[i] for i in mild_indices],
             s=50, alpha=0.9,
-            edgecolors='black', linewidths=0.6,
+            edgecolors='black', linewidths=1.2,
             label='Sąlyginės išskirtys'
         )
 
+    # Nesąlyginės išskirtys – mėlynas kontūras (mediumBlue)
     extreme_indices = list(extreme_outliers_set)
     if extreme_indices:
         plt.scatter(
@@ -96,14 +103,15 @@ def plot_tsne(X, y, df, dataset_name, mild_outliers_set, extreme_outliers_set):
             tsne[extreme_indices, 1],
             c=[colors[i] for i in extreme_indices],
             s=50, alpha=0.9,
-            edgecolors='#00FFFF', linewidths=0.6,
+            edgecolors='mediumBlue', linewidths=1.2,
             label='Nesąlyginės išskirtys'
         )
 
+    # Legenda
     unique_labels = sorted(set(y))
     handles = [mpatches.Patch(color=color_map[i], label=f"Klasė {unique_labels[i]}") for i in range(len(unique_labels))]
     handles.append(mpatches.Patch(edgecolor='black', facecolor='white', label='Sąlyginės išskirtys'))
-    handles.append(mpatches.Patch(edgecolor='#00FFFF', facecolor='white', label='Nesąlyginės išskirtys'))
+    handles.append(mpatches.Patch(edgecolor='mediumBlue', facecolor='white', label='Nesąlyginės išskirtys'))
 
     plt.legend(handles=handles, title="Klasės / Išskirtys")
     plt.tight_layout()
@@ -114,6 +122,7 @@ def plot_tsne(X, y, df, dataset_name, mild_outliers_set, extreme_outliers_set):
 
     print(f"Vizualizacija išsaugota: {output_path}")
 
+# === Paleidimas ===
 print("Apdorojama normuota duomenų aibė...")
 mild_normuota, extreme_normuota = detect_outliers(df_normuota, columns)
 plot_tsne(X_normuota, y_normuota, df_normuota, "Normuota", mild_normuota, extreme_normuota)
