@@ -33,10 +33,10 @@ lda_df['Outlier'] = 'None'
 
 for c in lda_df['Class'].unique():
     class_data = lda_df[lda_df['Class'] == c]
-    
+
     mild_outliers_set = set()
     extreme_outliers_set = set()
-    
+
     for col in ['LD1', 'LD2']:
         Q1 = class_data[col].quantile(0.25)
         Q3 = class_data[col].quantile(0.75)
@@ -54,10 +54,10 @@ for c in lda_df['Class'].unique():
 
         extreme_outliers_set.update(extreme_outliers.index)
         mild_outliers_set.update(mild_outliers.index)
-    
+
     # Spausidnama kiek kokių išskirčių buvo kiekvienoj klasėj
     print(f"Class {c}: Mild outliers = {len(mild_outliers_set)}, Extreme outliers = {len(extreme_outliers_set)}")
-    
+
     lda_df.loc[list(mild_outliers_set), 'Outlier'] = 'Mild'
     lda_df.loc[list(extreme_outliers_set), 'Outlier'] = 'Extreme'
 
