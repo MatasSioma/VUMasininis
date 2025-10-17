@@ -2,12 +2,10 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import os
 import matplotlib.patches as mpatches
-from sklearn.manifold import TSNE
+from sklearn.decomposition import PCA
 
 # === Parametrai ===
-PERPLEXITY = 30
-LEARNING_RATE = 200
-MAX_ITER = 1000
+N_COMPONENTS = 2  # PCA komponentų skaičius
 
 # === Duomenų įkėlimas ===
 df_nenormuota_su_atrinktais = pd.read_csv("EKG_pupsniu_analize_uzpildyta_medianomis.csv", sep=";")
@@ -29,7 +27,7 @@ X_normuota_su_visais = df_normuota_su_visais[columns_su_visais].values
 Y_normuota_su_visais = df_normuota_su_visais['label'].values
 
 X_nenormuota_su_visais = df_nenormuota_su_visais[columns_su_visais].values
-Y_nenormuota_su_visais = df_nenormuota_su_atrinktais['label'].values
+Y_nenormuota_su_visais = df_nenormuota_su_visais['label'].values
 
 color_map = ["#71B1FA", "#87E775", "#E05C58"]
 
@@ -60,35 +58,35 @@ def detect_outliers(df, columns):
 
     return mild_outliers_set, extreme_outliers_set
 
-# === Vizualizacija su t-SNE ===
-def plot_tsne(X, y, df, dataset_name, mild_outliers_set, extreme_outliers_set):
+# === Vizualizacija su PCA ===
+def plot_pca(X, y, df, dataset_name, mild_outliers_set, extreme_outliers_set):
     colors = [color_map[int(c)] for c in y]
 
     print(f"\n=== {dataset_name} ===")
     print(f"Rasta mild išskirčių: {len(mild_outliers_set)}")
     print(f"Rasta extreme išskirčių: {len(extreme_outliers_set)}")
 
-    tsne = TSNE(
-        n_components=2,
-        perplexity=PERPLEXITY,
-        max_iter=MAX_ITER,
-        learning_rate=LEARNING_RATE,
-        init='pca',
-        verbose=1,
-        random_state=42
-    ).fit_transform(X)
+    pca = PCA(n_components=N_COMPONENTS, random_state=42)
+    pca_result = pca.fit_transform(X)
+    
+    explained_variance = pca.explained_variance_ratio_
+    print(f"Paaiškinta dispersija PC1: {explained_variance[0]:.2%}")
+    print(f"Paaiškinta dispersija PC2: {explained_variance[1]:.2%}")
+    print(f"Bendra paaiškinta dispersija: {sum(explained_variance):.2%}")
 
-    base_dir = 'grafikai/tSNE'
+    base_dir = 'grafikai/PCA'
     os.makedirs(base_dir, exist_ok=True)
 
     plt.figure(figsize=(10, 7))
-    plt.title(f't-SNE Dimensijos Mažinimas ({dataset_name})\nperplexity={PERPLEXITY}, lr={LEARNING_RATE}')
+    plt.title(f'PCA Dimensijos Mažinimas ({dataset_name})\n'
+              f'PC1: {explained_variance[0]:.1%}, PC2: {explained_variance[1]:.1%}, '
+              f'Bendra: {sum(explained_variance):.1%}')
 
     # Normalūs taškai
     normal_indices = [i for i in range(len(df)) if i not in mild_outliers_set and i not in extreme_outliers_set]
     plt.scatter(
-        tsne[normal_indices, 0],
-        tsne[normal_indices, 1],
+        pca_result[normal_indices, 0],
+        pca_result[normal_indices, 1],
         c=[colors[i] for i in normal_indices],
         s=50, alpha=0.8, linewidths=0
     )
@@ -97,8 +95,8 @@ def plot_tsne(X, y, df, dataset_name, mild_outliers_set, extreme_outliers_set):
     mild_indices = list(mild_outliers_set)
     if mild_indices:
         plt.scatter(
-            tsne[mild_indices, 0],
-            tsne[mild_indices, 1],
+            pca_result[mild_indices, 0],
+            pca_result[mild_indices, 1],
             c=[colors[i] for i in mild_indices],
             s=50, alpha=0.9,
             edgecolors='black', linewidths=1.2,
@@ -109,8 +107,8 @@ def plot_tsne(X, y, df, dataset_name, mild_outliers_set, extreme_outliers_set):
     extreme_indices = list(extreme_outliers_set)
     if extreme_indices:
         plt.scatter(
-            tsne[extreme_indices, 0],
-            tsne[extreme_indices, 1],
+            pca_result[extreme_indices, 0],
+            pca_result[extreme_indices, 1],
             c=[colors[i] for i in extreme_indices],
             s=50, alpha=0.9,
             edgecolors='mediumBlue', linewidths=1.2,
@@ -124,6 +122,8 @@ def plot_tsne(X, y, df, dataset_name, mild_outliers_set, extreme_outliers_set):
     handles.append(mpatches.Patch(edgecolor='mediumBlue', facecolor='white', label='Kritinės išskirtys'))
 
     plt.legend(handles=handles, title="Klasės / Išskirtys")
+    plt.xlabel(f'PC1 ({explained_variance[0]:.1%})')
+    plt.ylabel(f'PC2 ({explained_variance[1]:.1%})')
     plt.tight_layout()
 
     output_path = f"{base_dir}/{dataset_name.lower().replace(' ', '_')}.png"
@@ -135,18 +135,18 @@ def plot_tsne(X, y, df, dataset_name, mild_outliers_set, extreme_outliers_set):
 # === Paleidimas ===
 print("Apdorojama normuota duomenų aibė (atrinkti požymiai)...")
 mild_normuota_su_atrinktais, extreme_normuota_su_atrinktais = detect_outliers(df_normuota_su_atrinktais, columns_su_atrinktais)
-plot_tsne(X_normuota_su_atrinktais, Y_normuota_su_atrinktais, df_normuota_su_atrinktais, "Normuota su atrinktais požymiais", mild_normuota_su_atrinktais, extreme_normuota_su_atrinktais)
+plot_pca(X_normuota_su_atrinktais, Y_normuota_su_atrinktais, df_normuota_su_atrinktais, "Normuota su atrinktais požymiais", mild_normuota_su_atrinktais, extreme_normuota_su_atrinktais)
 
 print("\nApdorojama nenormuota duomenų aibė (atrinkti požymiai)...")
 mild_nenormuota_su_atrinktais, extreme_nenormuota_su_atrinktais = detect_outliers(df_nenormuota_su_atrinktais, columns_su_atrinktais)
-plot_tsne(X_nenormuota_su_atrinktais, Y_nenormuota_su_atrinktais, df_nenormuota_su_atrinktais, "Nenormuota su atrinktais požymiais", mild_nenormuota_su_atrinktais, extreme_nenormuota_su_atrinktais)
+plot_pca(X_nenormuota_su_atrinktais, Y_nenormuota_su_atrinktais, df_nenormuota_su_atrinktais, "Nenormuota su atrinktais požymiais", mild_nenormuota_su_atrinktais, extreme_nenormuota_su_atrinktais)
 
 print("\nApdorojama normuota duomenų aibė (visi požymiai)...")
 mild_normuota_su_visais, extreme_normuota_su_visais = detect_outliers(df_normuota_su_visais, columns_su_visais)
-plot_tsne(X_normuota_su_visais, Y_normuota_su_visais, df_normuota_su_visais, "Normuota su visais požymiais", mild_normuota_su_visais, extreme_normuota_su_visais)
+plot_pca(X_normuota_su_visais, Y_normuota_su_visais, df_normuota_su_visais, "Normuota su visais požymiais", mild_normuota_su_visais, extreme_normuota_su_visais)
 
 print("\nApdorojama nenormuota duomenų aibė (visi požymiai)...")
 mild_nenormuota_su_visais, extreme_nenormuota_su_visais = detect_outliers(df_nenormuota_su_visais, columns_su_visais)
-plot_tsne(X_nenormuota_su_visais, Y_nenormuota_su_visais, df_nenormuota_su_visais, "Nenormuota su visais požymiais", mild_nenormuota_su_visais, extreme_nenormuota_su_visais)
+plot_pca(X_nenormuota_su_visais, Y_nenormuota_su_visais, df_nenormuota_su_visais, "Nenormuota su visais požymiais", mild_nenormuota_su_visais, extreme_nenormuota_su_visais)
 
-print("\n✓ Visos keturios t-SNE vizualizacijos sėkmingai sukurtos ir išsaugotos")
+print("\n✓ Visos keturios PCA vizualizacijos sėkmingai sukurtos ir išsaugotos")
