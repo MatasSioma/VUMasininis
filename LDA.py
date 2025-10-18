@@ -3,12 +3,13 @@ import numpy as np
 import os
 import matplotlib.pyplot as plt
 import matplotlib.lines as mlines
+import matplotlib.patches as mpatches
 import seaborn as sns
 from sklearn.preprocessing import StandardScaler
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 
 # Duomenų įkėlimas
-df = pd.read_csv("pilna_EKG_pupsniu_analize_normuota_pagal_minmax.csv", sep=";")
+df = pd.read_csv("pilna_EKG_pupsniu_analize_uzpildyta_medianomis_visi_normuota_pagal_minmax.csv", sep=";")
 
 # Požymių ir klasių atskyrimas
 X = df[["Q_val", "R_val", "S_val", "RR_l_0/RR_l_1", "signal_std", "seq_size"]]
@@ -65,7 +66,10 @@ for c in lda_df['Class'].unique():
 # Vizualizacija
 plt.figure(figsize=(10, 6))
 
-palette = sns.color_palette("Set1", n_colors=lda_df['Class'].nunique())
+color_map = ["#71B1FA", "#87E775", "#E05C58"]
+colors = [color_map[int(c)] for c in y]
+
+palette = color_map
 class_order = sorted(lda_df['Class'].unique())
 palette_dict = dict(zip(class_order, palette))
 
@@ -109,8 +113,15 @@ for cls in class_order:
     )
 
 plt.title('LDA vizualizacija')
-plt.legend(title='Klasė')
-plt.grid(True, linestyle='--', alpha=0.5)
+
+# Sukuriama legenda
+unique_labels = sorted(lda_df['Class'].unique())
+handles = [mpatches.Patch(color=palette_dict[label], label=f"Klasė {label}") for label in unique_labels]
+handles.append(mpatches.Patch(edgecolor='black', facecolor='white', label='Sąlyginės išskirtys'))
+handles.append(mpatches.Patch(edgecolor='mediumBlue', facecolor='white', label='Kritinės išskirtys'))
+plt.legend(handles=handles, title="Klasės / Išskirtys", loc='upper left', bbox_to_anchor=(1, 1))
+plt.tight_layout
+
 plt.xlabel('')
 plt.ylabel('')
 plt.savefig("grafikai/LDA/LDA.png", dpi=300, bbox_inches='tight')
