@@ -2,12 +2,14 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import os
 import matplotlib.patches as mpatches
-from sklearn.manifold import TSNE
+from sklearn.manifold import TSNE, trustworthiness
+from sklearn.metrics import silhouette_score
 
 # === Parametrai ===
-PERPLEXITY = 30
+PERPLEXITY = 50
 LEARNING_RATE = 200
 MAX_ITER = 1000
+N_NEIGHBORS = 15
 
 # === Duomenų įkėlimas ===
 df_nenormuota_su_atrinktais = pd.read_csv("EKG_pupsniu_analize_uzpildyta_medianomis.csv", sep=";")
@@ -29,7 +31,7 @@ X_normuota_su_visais = df_normuota_su_visais[columns_su_visais].values
 Y_normuota_su_visais = df_normuota_su_visais['label'].values
 
 X_nenormuota_su_visais = df_nenormuota_su_visais[columns_su_visais].values
-Y_nenormuota_su_visais = df_nenormuota_su_atrinktais['label'].values
+Y_nenormuota_su_visais = df_nenormuota_su_visais['label'].values
 
 color_map = ["#71B1FA", "#87E775", "#E05C58"]
 
@@ -78,6 +80,20 @@ def plot_tsne(X, y, df, dataset_name, mild_outliers_set, extreme_outliers_set):
         random_state=42
     ).fit_transform(X)
 
+    # === Patikimumas ir kontūro įvertis ===
+    try:
+        tw = trustworthiness(X, tsne, n_neighbors=N_NEIGHBORS)
+        print(f"Patikimumas: {tw:.4f}")
+    except Exception as e:
+        print("Klaida patikimumo skaičiavime:", e)
+
+    try:
+        sil = silhouette_score(tsne, y)
+        print(f"Kontūro įvertis: {sil:.4f}")
+    except Exception as e:
+        print("Klaida kontūro įverčio skaičiavime:", e)
+
+    # === Vizualizacija ===
     base_dir = 'grafikai/tSNE'
     os.makedirs(base_dir, exist_ok=True)
 
@@ -105,7 +121,7 @@ def plot_tsne(X, y, df, dataset_name, mild_outliers_set, extreme_outliers_set):
             label='Sąlyginės išskirtys'
         )
 
-    # Kritinės išskirtys – mėlynas kontūras (mediumBlue)
+    # Kritinės išskirtys – mėlynas kontūras
     extreme_indices = list(extreme_outliers_set)
     if extreme_indices:
         plt.scatter(
