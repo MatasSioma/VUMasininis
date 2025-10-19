@@ -151,6 +151,3 @@ for filename in filenames:
         print(f"Kontūro įvertis: {sil:.4f}")
     except Exception as e:
         print("Klaida kontūro įverčio skaičiavime.", e)
-
-    base_dir = 'grafikai/UMAP'
-    os.makedirs(base_dir, exist_ok=True)
