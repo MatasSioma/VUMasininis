@@ -12,7 +12,6 @@ import seaborn as sns
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 
 N_NEIGHBORS = 15
-MIN_DIST = 0.3
 
 filenames = [
     "EKG_pupsniu_analize_uzpildyta_medianomis.csv", 
