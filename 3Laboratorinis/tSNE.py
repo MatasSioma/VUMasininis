@@ -25,6 +25,13 @@ tsne = TSNE(n_components=2,
     )
 data_tsne = tsne.fit_transform(X)
 
+# Išsaugoti 2D duomenis į CSV
+tsne_df = pd.DataFrame(data_tsne, columns=['tsne_dim1', 'tsne_dim2'])
+tsne_df['label'] = Y
+os.makedirs("grafikai/tSNE", exist_ok=True)
+tsne_df.to_csv('grafikai/tSNE/tsne_2d_data.csv', sep=';', index=False)
+print("✓ t-SNE 2D data saved to grafikai/tSNE/tsne_2d_data.csv")
+
 plt.figure(figsize=(10, 8))
 
 class_values = sorted(df['label'].unique())
@@ -47,7 +54,6 @@ plt.xlabel('Dimensija 1')
 plt.ylabel('Dimensija 2')
 plt.legend(title='Klasės / Išskirtys')
 plt.tight_layout()
-os.makedirs("grafikai/tSNE", exist_ok=True)
 plt.savefig("grafikai/tSNE/atrinkta_aibe.png", dpi=300)
 plt.close()
 print("✓ t-SNE plot saved to grafikai/tSNE/atrinkta_aibe.png")

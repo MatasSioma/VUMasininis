@@ -43,9 +43,10 @@ print(df_atrinkta.info())
 print('\n=== Normavimas ===')
 df_minmax = df_atrinkta.copy()
 for col in pozymiai:
-    xmin = df_minmax[col].min()
-    xmax = df_minmax[col].max()
-    df_minmax[col] = ((df_minmax[col] - xmin) / (xmax - xmin))
+    if col != 'label':
+        xmin = df_minmax[col].min()
+        xmax = df_minmax[col].max()
+        df_minmax[col] = ((df_minmax[col] - xmin) / (xmax - xmin))
 
 print(tabulate(df_minmax.describe(), headers='keys', tablefmt='fancy_grid', showindex=True, numalign='left'))
 
