@@ -1,8 +1,12 @@
+import os
+
 import pandas as pd
 from tabulate import tabulate
 
 df_original = pd.read_csv('../EKG_pupsniu_analize.csv', sep=';')
 columns = df_original.columns.drop('label')
+
+os.makedirs("duomenys", exist_ok=True)
 
 print('=== Bazinė informacija apie visą duomenų rinkinį ===')
 print(df_original.info())
@@ -50,4 +54,4 @@ for col in pozymiai:
 
 print(tabulate(df_minmax.describe(), headers='keys', tablefmt='fancy_grid', showindex=True, numalign='left'))
 
-df_minmax.to_csv('atrinkta_aibe.csv', index=False, sep=';')
+df_minmax.to_csv('duomenys/atrinkta_aibe.csv', index=False, sep=';')

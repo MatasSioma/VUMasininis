@@ -8,14 +8,14 @@ from matplotlib import cm
 
 from sklearn.manifold import TSNE
 
-df = pd.read_csv('atrinkta_aibe.csv', sep=';')
+df = pd.read_csv('duomenys/atrinkta_aibe.csv', sep=';')
 X = df[[col for col in df.columns if col != 'label']].values
 Y = df['label'].values
 
 PERPLEXITY = 50
-MAX_ITER = 3000
+MAX_ITER = 500
 METRIC = 'canberra'
-RANDOM_STATE = 2
+RANDOM_STATE = 42
 
 tsne = TSNE(n_components=2,
     perplexity=PERPLEXITY,
@@ -29,8 +29,9 @@ data_tsne = tsne.fit_transform(X)
 tsne_df = pd.DataFrame(data_tsne, columns=['tsne_dim1', 'tsne_dim2'])
 tsne_df['label'] = Y
 os.makedirs("grafikai/tSNE", exist_ok=True)
-tsne_df.to_csv('grafikai/tSNE/tsne_2d_data.csv', sep=';', index=False)
-print("✓ t-SNE 2D data saved to grafikai/tSNE/tsne_2d_data.csv")
+os.makedirs("duomenys", exist_ok=True)
+tsne_df.to_csv('duomenys/tsne_2d_data.csv', sep=';', index=False)
+print("✓ t-SNE 2D data saved to duomenys/tsne_2d_data.csv")
 
 plt.figure(figsize=(10, 8))
 
@@ -52,7 +53,7 @@ subtitle = f"perplexity={PERPLEXITY}, max_iter={MAX_ITER}, metric={METRIC}, rand
 plt.title(f't-SNE Dimensijos Mažinimas (atrinkti, sunormuoti požymiai)\n{subtitle}')
 plt.xlabel('Dimensija 1')
 plt.ylabel('Dimensija 2')
-plt.legend(title='Klasės / Išskirtys')
+plt.legend(title='Klasės')
 plt.tight_layout()
 plt.savefig("grafikai/tSNE/atrinkta_aibe.png", dpi=300)
 plt.close()
