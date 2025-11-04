@@ -25,13 +25,20 @@ tsne = TSNE(n_components=2,
     )
 data_tsne = tsne.fit_transform(X)
 
-# Išsaugoti 2D duomenis į CSV
-tsne_df = pd.DataFrame(data_tsne, columns=['tsne_dim1', 'tsne_dim2'])
+# Min-Max normavimas t-SNE rezultatams
+data_tsne_normalized = data_tsne.copy()
+for i in range(data_tsne.shape[1]):
+    xmin = data_tsne[:, i].min()
+    xmax = data_tsne[:, i].max()
+    data_tsne_normalized[:, i] = (data_tsne[:, i] - xmin) / (xmax - xmin)
+
+# Išsaugoti sunormuotus 2D duomenis į CSV
+tsne_df = pd.DataFrame(data_tsne_normalized, columns=['tsne_dim1', 'tsne_dim2'])
 tsne_df['label'] = Y
 os.makedirs("grafikai/tSNE", exist_ok=True)
 os.makedirs("duomenys", exist_ok=True)
 tsne_df.to_csv('duomenys/tsne_2d_data.csv', sep=';', index=False)
-print("✓ t-SNE 2D data saved to duomenys/tsne_2d_data.csv")
+print("✓ t-SNE 2D data (normalized) saved to duomenys/tsne_2d_data.csv")
 
 plt.figure(figsize=(10, 8))
 
@@ -42,8 +49,8 @@ colors = cm.viridis(np.linspace(0, 1, len(class_values)))
 for val, label, color in zip(class_values, class_labels, colors):
     mask = df['label'] == val
     plt.scatter(
-        data_tsne[mask, 0],
-        data_tsne[mask, 1],
+        data_tsne_normalized[mask, 0],
+        data_tsne_normalized[mask, 1],
         color=color,
         label=label,
         alpha=0.7
