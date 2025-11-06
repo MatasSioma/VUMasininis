@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 from matplotlib import pyplot as plt
 from scipy.cluster.hierarchy import dendrogram, linkage, fcluster
-from sklearn.decomposition import PCA
+from sklearn.manifold import TSNE
 
 
 def load_numeric_csv(path):
@@ -14,7 +14,6 @@ def load_numeric_csv(path):
     return X.values
 
 def load_full_csv(path):
-    """Įkelia CSV su label stulpeliu"""
     df = pd.read_csv(path, sep=';')
     return df
 
@@ -49,44 +48,30 @@ def atlikti_klasterizavima_su_n(Z, n_clusters):
     clusters = fcluster(Z, t=n_clusters, criterion='maxclust')
     return clusters
 
-def vizualizuoti_klasterius(X, clusters, pavadinimas, failo_pavadinimas):
-    if X.shape[1] > 2:
-        pca = PCA(n_components=2)
-        X_2d = pca.fit_transform(X)
-    else:
-        X_2d = X
-
-    plt.figure(figsize=(8, 6))
-    plt.scatter(X_2d[:, 0], X_2d[:, 1], c=clusters, cmap='tab10', s=35)
-    plt.title(f"Hierarchinis klasterizavimas ({pavadinimas})")
-    plt.xlabel("1 dimensija")
-    plt.ylabel("2 dimensija")
-    plt.tight_layout()
-    plt.savefig(os.path.join(base_dir_klasteriai, f"{failo_pavadinimas}.png"), dpi=300)
-    plt.close()
-
 def vizualizuoti_klasterius_sujungta(X_list, clusters_list, pavadinimai, failo_pavadinimas):
-    fig, axes = plt.subplots(1, 3, figsize=(20, 5))
-    
+    fig, axes = plt.subplots(1, 3, figsize=(15, 5))
+
     for i, (X, clusters, pavadinimas) in enumerate(zip(X_list, clusters_list, pavadinimai)):
         if X.shape[1] > 2:
-            pca = PCA(n_components=2)
-            X_2d = pca.fit_transform(X)
+            tsne = TSNE(n_components=2, perplexity=50, metric='canberra', random_state=42)
+            X_2d = tsne.fit_transform(X)
         else:
             X_2d = X
-        
+
         axes[i].scatter(X_2d[:, 0], X_2d[:, 1], c=clusters, cmap='tab10', s=35)
         axes[i].set_title(f"Hierarchinis klasterizavimas\n({pavadinimas})")
-        axes[i].set_xlabel("1 dimensija")
-        axes[i].set_ylabel("2 dimensija")
-    
+        axes[i].set_xticks([])
+        axes[i].set_yticks([])
+        axes[i].set_xlabel('')
+        axes[i].set_ylabel('')
+
     plt.tight_layout()
     plt.savefig(os.path.join(base_dir_klasteriai, f"{failo_pavadinimas}.png"), dpi=300)
     plt.close()
 
 def vizualizuoti_palyginima(X_2d, tiksliosios_klases, hierarchiniai_klasteriai, failo_pavadinimas):
-    fig, axes = plt.subplots(1, 3, figsize=(20, 5))
-    
+    fig, axes = plt.subplots(1, 3, figsize=(15, 5))
+
     # 1. t-SNE su tiksliosiomis klasėmis
     unique_classes = sorted(np.unique(tiksliosios_klases))
     n_classes = len(unique_classes)
@@ -109,7 +94,7 @@ def vizualizuoti_palyginima(X_2d, tiksliosios_klases, hierarchiniai_klasteriai, 
         clusters_in_class = hierarchiniai_klasteriai[mask]
         for cluster in np.unique(hierarchiniai_klasteriai):
             confusion_map[int(true_class), cluster-1] = np.sum(clusters_in_class == cluster)
-    
+
     # Sukuriame spalvų kodą pagal dominuojantį klasterį
     color_codes = np.zeros(len(tiksliosios_klases))
     for i, (true_class, hier_cluster) in enumerate(zip(tiksliosios_klases, hierarchiniai_klasteriai)):
@@ -123,11 +108,11 @@ def vizualizuoti_palyginima(X_2d, tiksliosios_klases, hierarchiniai_klasteriai, 
         clusters_in_class = hierarchiniai_klasteriai[mask]
         dominant_cluster = np.argmax(confusion_map[int(true_class), :]) + 1
         correct += np.sum(clusters_in_class == dominant_cluster)
-    
+
     accuracy = (correct / len(tiksliosios_klases)) * 100
     print(f"\nPersidengimo tiksumas: {accuracy:.2f}%")
     print(f"Nesutampa: {100-accuracy:.2f}%")
-    
+
     # Pažymime taškus pagal sutapimą/nesutapimą
     match_colors = []
     for true_class, hier_cluster in zip(tiksliosios_klases, hierarchiniai_klasteriai):
@@ -137,12 +122,12 @@ def vizualizuoti_palyginima(X_2d, tiksliosios_klases, hierarchiniai_klasteriai, 
             match_colors.append('gray')  # Sutampa
         else:
             match_colors.append('red')  # Nesutampa
-    
+
     axes[2].scatter(X_2d[:, 0], X_2d[:, 1], c=match_colors, s=35, alpha=0.8, edgecolors='black', linewidth=0.5)
     axes[2].set_title(f"t-SNE: atitikimas pagal klasės\n{100-accuracy:.2f}% neatitinka")
     axes[2].set_xlabel('Dimensija 1')
     axes[2].set_ylabel('Dimensija 2')
-    
+
     # Pridedame legendą
     from matplotlib.patches import Patch
     legend_elements = [
@@ -150,10 +135,33 @@ def vizualizuoti_palyginima(X_2d, tiksliosios_klases, hierarchiniai_klasteriai, 
         Patch(facecolor='red', edgecolor='black', label='Neatitinka')
     ]
     axes[2].legend(handles=legend_elements, loc='best')
-    
+
     plt.tight_layout()
     plt.savefig(os.path.join(base_dir_klasteriai, f"{failo_pavadinimas}.png"), dpi=300)
     plt.close()
+
+def spausdinti_neatitikimus(tiksliosios_klases, klasteriai):
+    unique_classes = sorted(np.unique(tiksliosios_klases))
+    neatitikimai_pagal_klase = {}
+
+    for true_class in unique_classes:
+        mask = tiksliosios_klases == true_class
+        klasteriai_klaseje = klasteriai[mask]
+
+        # Randame dominuojantį klasterį šiai klasei
+        unique_clusters, counts = np.unique(klasteriai_klaseje, return_counts=True)
+        dominant_cluster = unique_clusters[np.argmax(counts)]
+
+        # Skaičiuojame neatitinkančius
+        neatitinkantys = np.sum(klasteriai_klaseje != dominant_cluster)
+        neatitikimai_pagal_klase[int(true_class)] = neatitinkantys
+
+    print("\nNeatitinkančių objektų kiekis pagal klases:")
+    for klase, kiekis in neatitikimai_pagal_klase.items():
+        print(f"Neatitinkančių objektų kiekis {klase} klasei: {kiekis}")
+
+    return neatitikimai_pagal_klase
+
 
 X_visi_pozymiai = load_numeric_csv('../pilna_EKG_pupsniu_analize_uzpildyta_medianomis_visi_normuota_pagal_minmax.csv')
 X_atrinkta = load_numeric_csv('duomenys/atrinkta_aibe.csv')
@@ -256,6 +264,10 @@ vizualizuoti_palyginima(X_2D, tiksliosios_klases, klasteriai_2D_plus1,
                         f'palyginimas_tsne_vs_hierarchinis_{n_rekom_2D+1}k')
 vizualizuoti_palyginima(X_2D, tiksliosios_klases, klasteriai_2D_8, 
                         'palyginimas_tsne_vs_hierarchinis_8k')
+
+spausdinti_neatitikimus(tiksliosios_klases, klasteriai_2D_rekom)
+spausdinti_neatitikimus(tiksliosios_klases, klasteriai_2D_plus1)
+spausdinti_neatitikimus(tiksliosios_klases, klasteriai_2D_8)
 
 
 print("\n" + "="*60)
