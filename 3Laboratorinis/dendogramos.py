@@ -138,8 +138,8 @@ def vizualizuoti_palyginima(X_2d, tiksliosios_klases, hierarchiniai_klasteriai, 
         else:
             match_colors.append('red')  # Nesutampa
     
-    axes[2].scatter(X_2d[:, 0], X_2d[:, 1], c=match_colors, s=35, alpha=0.6, edgecolors='black', linewidth=0.5)
-    axes[2].set_title(f"t-SNE: atitikimas pagal klasės\n{accuracy:.2f}% neatitinka")
+    axes[2].scatter(X_2d[:, 0], X_2d[:, 1], c=match_colors, s=35, alpha=0.8, edgecolors='black', linewidth=0.5)
+    axes[2].set_title(f"t-SNE: atitikimas pagal klasės\n{100-accuracy:.2f}% neatitinka")
     axes[2].set_xlabel('Dimensija 1')
     axes[2].set_ylabel('Dimensija 2')
     
