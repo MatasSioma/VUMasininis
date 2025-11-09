@@ -4,8 +4,9 @@ import numpy as np
 from matplotlib import pyplot as plt
 from scipy.cluster.hierarchy import dendrogram, linkage, fcluster
 from sklearn.manifold import TSNE
+from sklearn.ensemble import IsolationForest
 
-
+# Pagalbinės funkcijos
 def load_numeric_csv(path):
     df = pd.read_csv(path, sep=';')
     features = [col for col in df.columns if col != 'label']
@@ -49,7 +50,10 @@ def atlikti_klasterizavima_su_n(Z, n_clusters):
     return clusters
 
 def vizualizuoti_klasterius_sujungta(X_list, clusters_list, pavadinimai, failo_pavadinimas):
-    fig, axes = plt.subplots(1, 3, figsize=(15, 5))
+    fig, axes = plt.subplots(1, len(X_list), figsize=(5 * len(X_list), 5))
+
+    if len(X_list) == 1:
+        axes = [axes]
 
     for i, (X, clusters, pavadinimas) in enumerate(zip(X_list, clusters_list, pavadinimai)):
         if X.shape[1] > 2:
@@ -62,8 +66,6 @@ def vizualizuoti_klasterius_sujungta(X_list, clusters_list, pavadinimai, failo_p
         axes[i].set_title(f"Hierarchinis klasterizavimas\n({pavadinimas})")
         axes[i].set_xticks([])
         axes[i].set_yticks([])
-        axes[i].set_xlabel('')
-        axes[i].set_ylabel('')
 
     plt.tight_layout()
     plt.savefig(os.path.join(base_dir_klasteriai, f"{failo_pavadinimas}.png"), dpi=300)
@@ -72,22 +74,14 @@ def vizualizuoti_klasterius_sujungta(X_list, clusters_list, pavadinimai, failo_p
 def vizualizuoti_palyginima(X_2d, tiksliosios_klases, hierarchiniai_klasteriai, failo_pavadinimas):
     fig, axes = plt.subplots(1, 3, figsize=(15, 5))
 
-    # 1. t-SNE su tiksliosiomis klasėmis
     unique_classes = sorted(np.unique(tiksliosios_klases))
     n_classes = len(unique_classes)
     scatter1 = axes[0].scatter(X_2d[:, 0], X_2d[:, 1], c=tiksliosios_klases, cmap='viridis', s=35, alpha=0.7)
     axes[0].set_title('t-SNE su tiksliosiomis klasėmis')
-    axes[0].set_xlabel('Dimensija 1')
-    axes[0].set_ylabel('Dimensija 2')
 
-    # 2. Hierarchinio klasterizavimo rezultatas
     scatter2 = axes[1].scatter(X_2d[:, 0], X_2d[:, 1], c=hierarchiniai_klasteriai, cmap='tab10', s=35, alpha=0.7)
     axes[1].set_title('t-SNE su klasterių klasėmis')
-    axes[1].set_xlabel('Dimensija 1')
-    axes[1].set_ylabel('Dimensija 2')
 
-    # 3. Persidengimo analizė
-    # Skaičiuojame, kiek kiekvienos tiksliosios klasės taškų patenka į kiekvieną klasterį
     confusion_map = np.zeros((n_classes, len(np.unique(hierarchiniai_klasteriai))))
     for true_class in unique_classes:
         mask = tiksliosios_klases == true_class
@@ -95,13 +89,6 @@ def vizualizuoti_palyginima(X_2d, tiksliosios_klases, hierarchiniai_klasteriai, 
         for cluster in np.unique(hierarchiniai_klasteriai):
             confusion_map[int(true_class), cluster-1] = np.sum(clusters_in_class == cluster)
 
-    # Sukuriame spalvų kodą pagal dominuojantį klasterį
-    color_codes = np.zeros(len(tiksliosios_klases))
-    for i, (true_class, hier_cluster) in enumerate(zip(tiksliosios_klases, hierarchiniai_klasteriai)):
-        # Spalva = (tikroji_klasė * 10 + hierarchinis_klasteris)
-        color_codes[i] = true_class * 10 + hier_cluster
-
-    # Apskaičiuojame tikslumą
     correct = 0
     for true_class in unique_classes:
         mask = tiksliosios_klases == true_class
@@ -110,25 +97,19 @@ def vizualizuoti_palyginima(X_2d, tiksliosios_klases, hierarchiniai_klasteriai, 
         correct += np.sum(clusters_in_class == dominant_cluster)
 
     accuracy = (correct / len(tiksliosios_klases)) * 100
-    print(f"\nPersidengimo tiksumas: {accuracy:.2f}%")
-    print(f"Nesutampa: {100-accuracy:.2f}%")
+    print(f"\nPersidengimo tikslumas: {accuracy:.2f}%")
 
-    # Pažymime taškus pagal sutapimą/nesutapimą
     match_colors = []
     for true_class, hier_cluster in zip(tiksliosios_klases, hierarchiniai_klasteriai):
-        # Randame, kuris klasteris dominuoja šiai klasei
         dominant_cluster = np.argmax(confusion_map[int(true_class), :]) + 1
         if hier_cluster == dominant_cluster:
-            match_colors.append('gray')  # Sutampa
+            match_colors.append('gray')
         else:
-            match_colors.append('red')  # Nesutampa
+            match_colors.append('red')
 
     axes[2].scatter(X_2d[:, 0], X_2d[:, 1], c=match_colors, s=35, alpha=0.8, edgecolors='black', linewidth=0.5)
-    axes[2].set_title(f"t-SNE: atitikimas pagal klasės\n{100-accuracy:.2f}% neatitinka")
-    axes[2].set_xlabel('Dimensija 1')
-    axes[2].set_ylabel('Dimensija 2')
+    axes[2].set_title(f"Atitikimas pagal klasę\n{100-accuracy:.2f}% neatitinka")
 
-    # Pridedame legendą
     from matplotlib.patches import Patch
     legend_elements = [
         Patch(facecolor='gray', edgecolor='black', label='Atitinka'),
@@ -147,12 +128,8 @@ def spausdinti_neatitikimus(tiksliosios_klases, klasteriai):
     for true_class in unique_classes:
         mask = tiksliosios_klases == true_class
         klasteriai_klaseje = klasteriai[mask]
-
-        # Randame dominuojantį klasterį šiai klasei
         unique_clusters, counts = np.unique(klasteriai_klaseje, return_counts=True)
         dominant_cluster = unique_clusters[np.argmax(counts)]
-
-        # Skaičiuojame neatitinkančius
         neatitinkantys = np.sum(klasteriai_klaseje != dominant_cluster)
         neatitikimai_pagal_klase[int(true_class)] = neatitinkantys
 
@@ -162,12 +139,11 @@ def spausdinti_neatitikimus(tiksliosios_klases, klasteriai):
 
     return neatitikimai_pagal_klase
 
-
+# Duomenų įkėlimas
 X_visi_pozymiai = load_numeric_csv('../pilna_EKG_pupsniu_analize_uzpildyta_medianomis_visi_normuota_pagal_minmax.csv')
 X_atrinkta = load_numeric_csv('duomenys/atrinkta_aibe.csv')
 X_2D = load_numeric_csv('duomenys/tsne_2d_data.csv')
 
-# Įkeliame tsne_2d_data su label stulpeliu palyginimui
 df_tsne = load_full_csv('duomenys/tsne_2d_data.csv')
 tiksliosios_klases = df_tsne['label'].values
 
@@ -176,30 +152,22 @@ Z_visi_pozymiai = linkage(X_visi_pozymiai, method=METHOD)
 Z_atrinkta = linkage(X_atrinkta, method=METHOD)
 Z_2D = linkage(X_2D, method=METHOD)
 
-
 base_dir_dendograma = 'grafikai/dendogramos'
 base_dir_klasteriai = 'grafikai/hierarchinis'
 os.makedirs(base_dir_dendograma, exist_ok=True)
 os.makedirs(base_dir_klasteriai, exist_ok=True)
 
-
+# Dendrogramos
 print_dendrograma(Z_visi_pozymiai, 'visi požymiai', 'visi_pozymiai')
 print_dendrograma(Z_atrinkta, 'atrinkti požymiai', 'atrinkti_pozymiai')
 print_dendrograma(Z_2D, 'sumažinta iki 2D (t-SNE)', '2D')
 
-
-# Visi požymiai - 3 variantai
+# Klasterizavimas
 klasteriai_visi_rekom = atlikti_klasterizavima(Z_visi_pozymiai)
 n_rekom_visi = len(set(klasteriai_visi_rekom))
 klasteriai_visi_plus1 = atlikti_klasterizavima_su_n(Z_visi_pozymiai, n_rekom_visi + 1)
 klasteriai_visi_8 = atlikti_klasterizavima_su_n(Z_visi_pozymiai, 8)
 
-print(f"\nVisi požymiai:")
-print(f"  - Rekomenduojama: {n_rekom_visi} klasteriai")
-print(f"  - +1 variantas: {n_rekom_visi + 1} klasteriai")
-print(f"  - Fiksuota: 8 klasteriai")
-
-# Sujungti grafikai - visi požymiai
 vizualizuoti_klasterius_sujungta(
     [X_visi_pozymiai, X_visi_pozymiai, X_visi_pozymiai],
     [klasteriai_visi_rekom, klasteriai_visi_plus1, klasteriai_visi_8],
@@ -209,19 +177,11 @@ vizualizuoti_klasterius_sujungta(
     'visi_pozymiai_sujungta'
 )
 
-
-# Atrinkti požymiai - 3 variantai
 klasteriai_atrinkta_rekom = atlikti_klasterizavima(Z_atrinkta)
 n_rekom_atrinkta = len(set(klasteriai_atrinkta_rekom))
 klasteriai_atrinkta_plus1 = atlikti_klasterizavima_su_n(Z_atrinkta, n_rekom_atrinkta + 1)
 klasteriai_atrinkta_8 = atlikti_klasterizavima_su_n(Z_atrinkta, 8)
 
-print(f"\nAtrinkti požymiai:")
-print(f"  - Rekomenduojama: {n_rekom_atrinkta} klasteriai")
-print(f"  - +1 variantas: {n_rekom_atrinkta + 1} klasteriai")
-print(f"  - Fiksuota: 8 klasteriai")
-
-# Sujungti grafikai - atrinkti požymiai
 vizualizuoti_klasterius_sujungta(
     [X_atrinkta, X_atrinkta, X_atrinkta],
     [klasteriai_atrinkta_rekom, klasteriai_atrinkta_plus1, klasteriai_atrinkta_8],
@@ -231,19 +191,11 @@ vizualizuoti_klasterius_sujungta(
     'atrinkti_pozymiai_sujungta'
 )
 
-
-# 2D (t-SNE) - 3 variantai
 klasteriai_2D_rekom = atlikti_klasterizavima(Z_2D)
 n_rekom_2D = len(set(klasteriai_2D_rekom))
 klasteriai_2D_plus1 = atlikti_klasterizavima_su_n(Z_2D, n_rekom_2D + 1)
 klasteriai_2D_8 = atlikti_klasterizavima_su_n(Z_2D, 8)
 
-print(f"\n2D (t-SNE):")
-print(f"  - Rekomenduojama: {n_rekom_2D} klasteriai")
-print(f"  - +1 variantas: {n_rekom_2D + 1} klasteriai")
-print(f"  - Fiksuota: 8 klasteriai")
-
-# Sujungti grafikai - 2D
 vizualizuoti_klasterius_sujungta(
     [X_2D, X_2D, X_2D],
     [klasteriai_2D_rekom, klasteriai_2D_plus1, klasteriai_2D_8],
@@ -253,26 +205,50 @@ vizualizuoti_klasterius_sujungta(
     '2D_sujungta'
 )
 
-# NAUJAS PALYGINIMAS: t-SNE tiksliosios klasės vs hierarchiniai klasteriai
-print("\n" + "="*60)
-print("Kuriam palyginimo grafikus...")
-print("="*60)
-
-vizualizuoti_palyginima(X_2D, tiksliosios_klases, klasteriai_2D_rekom, 
-                        f'palyginimas_tsne_vs_hierarchinis_{n_rekom_2D}k')
-vizualizuoti_palyginima(X_2D, tiksliosios_klases, klasteriai_2D_plus1, 
-                        f'palyginimas_tsne_vs_hierarchinis_{n_rekom_2D+1}k')
-vizualizuoti_palyginima(X_2D, tiksliosios_klases, klasteriai_2D_8, 
-                        'palyginimas_tsne_vs_hierarchinis_8k')
+# Palyginimas
+vizualizuoti_palyginima(X_2D, tiksliosios_klases, klasteriai_2D_rekom, f'palyginimas_tsne_vs_hierarchinis_{n_rekom_2D}k')
+vizualizuoti_palyginima(X_2D, tiksliosios_klases, klasteriai_2D_plus1, f'palyginimas_tsne_vs_hierarchinis_{n_rekom_2D+1}k')
+vizualizuoti_palyginima(X_2D, tiksliosios_klases, klasteriai_2D_8, 'palyginimas_tsne_vs_hierarchinis_8k')
 
 spausdinti_neatitikimus(tiksliosios_klases, klasteriai_2D_rekom)
 spausdinti_neatitikimus(tiksliosios_klases, klasteriai_2D_plus1)
 spausdinti_neatitikimus(tiksliosios_klases, klasteriai_2D_8)
 
+# 5. Išskirčių įtakos analizė visoms aibėms
+def analizuoti_isksirtis_ir_vizualizuoti(X, klasteriu_kiekis, pavadinimas, failo_pavadinimas):
+    print(f"\nAnalizuojama aibė: {pavadinimas}")
+    detektorius = IsolationForest(contamination=0.05, random_state=42)
+    outlier_labels = detektorius.fit_predict(X)
+    n_outliers = np.sum(outlier_labels == -1)
+    print(f"Rasta {n_outliers} išskirčių iš {len(X)} ({(n_outliers/len(X))*100:.2f}%).")
 
-print("\n" + "="*60)
-print("✓ Dendrogramos išsaugotos į", base_dir_dendograma)
-print("✓ Klasterių vizualizacijos išsaugotos į", base_dir_klasteriai)
-print(f"✓ Sukurti 3 sujungti horizontalūs grafikai (po 3 subgrafikius kiekviename)")
-print(f"✓ Sukurti 3 palyginimo grafikai (t-SNE vs hierarchinis klasterizavimas)")
+    X_be_isksirciu = X[outlier_labels == 1]
+    Z_be_isksirciu = linkage(X_be_isksirciu, method=METHOD)
+    klasteriai_po = atlikti_klasterizavima(Z_be_isksirciu)
+    n_po = len(set(klasteriai_po))
+
+    print(f"Be išskirčių – rekomenduojama {n_po} klasterių.")
+    vizualizuoti_klasterius_sujungta(
+        [X, X_be_isksirciu],
+        [klasteriu_kiekis, klasteriu_kiekis],
+        [f"Su išskirtimis ({len(set(klasteriu_kiekis))} klasteriai)",
+         f"Be išskirčių ({n_po} klasteriai)"],
+        failo_pavadinimas
+    )
+    print(f"Sukurtas grafikas: {failo_pavadinimas}.png")
+
+analizuoti_isksirtis_ir_vizualizuoti(X_visi_pozymiai, klasteriai_visi_rekom, "Visi požymiai", "palyginimas_isksirtys_visi")
+analizuoti_isksirtis_ir_vizualizuoti(X_atrinkta, klasteriai_atrinkta_rekom, "Atrinkti požymiai", "palyginimas_isksirtys_atrinkta")
+analizuoti_isksirtis_ir_vizualizuoti(X_2D, klasteriai_2D_rekom, "t-SNE (2D)", "palyginimas_isksirtys_2D")
+
+# Dimensijų mažinimo įtaka
+vizualizuoti_klasterius_sujungta(
+    [X_atrinkta, X_2D],
+    [klasteriai_atrinkta_rekom, klasteriai_2D_rekom],
+    [f"Originalūs duomenys ({n_rekom_atrinkta} klasteriai)",
+     f"t-SNE duomenys ({n_rekom_2D} klasteriai)"],
+    "palyginimas_dimensiju_mazinimas"
+)
+
+print("Sukurtas grafikas: dimensijų mažinimo įtaka (originalūs vs t-SNE duomenys)")
 print("="*60)
