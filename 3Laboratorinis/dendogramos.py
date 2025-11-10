@@ -224,14 +224,6 @@ spausdinti_neatitikimus(tiksliosios_klases, klasteriai_2D_8)
 
 # 5. Išskirčių įtakos analizė naudojant IQR metodą
 def analizuoti_isksirtis_iqr_ir_vizualizuoti(X, klasteriu_kiekis, pavadinimas, failo_pavadinimas, iqr_mult=3.0):
-    """
-    Analizuoja išskirčių įtaką naudojant IQR metodą.
-    
-    Parameters:
-    -----------
-    iqr_mult : float
-        IQR daugiklis (3.0 = ekstremalūs išskirtys, 1.5 = įprasti išskirtys)
-    """
     print(f"\nAnalizuojama aibė: {pavadinimas}")
     print(f"Naudojamas IQR daugiklis: {iqr_mult}")
     
@@ -282,15 +274,41 @@ analizuoti_isksirtis_iqr_ir_vizualizuoti(
     "Atrinkti požymiai", "palyginimas_isksirtys_iqr_atrinkta", iqr_mult=3.0
 )
 
-analizuoti_isksirtis_iqr_ir_vizualizuoti(
-    X_2D, klasteriai_2D_rekom, 
-    "t-SNE (2D)", "palyginimas_isksirtys_iqr_2D", iqr_mult=3.0
+# ================================================================
+# PALYGINIMAS: t-SNE su išskirtimis vs be išskirčių
+# ================================================================
+print("\n" + "="*60)
+print("PALYGINIMAS: t-SNE su išskirtimis vs be išskirčių")
+print("="*60)
+
+# Įkeliame abiejų t-SNE variantų duomenis
+X_2D_su_isskirtim = load_numeric_csv('duomenys/tsne_2d_data.csv')
+X_2D_be_isskirciu = load_numeric_csv('duomenys/tsne_2d_data_be_isskirciu.csv')
+
+# Hierarchinis klasterizavimas abiem
+Z_2D_su = linkage(X_2D_su_isskirtim, method=METHOD)
+Z_2D_be = linkage(X_2D_be_isskirciu, method=METHOD)
+
+klasteriai_2D_su = atlikti_klasterizavima(Z_2D_su)
+klasteriai_2D_be = atlikti_klasterizavima(Z_2D_be)
+
+# Gautų klasterių kiekiai
+n_2D_su = len(set(klasteriai_2D_su))
+n_2D_be = len(set(klasteriai_2D_be))
+print(f"t-SNE su išskirtimis: {n_2D_su} klasteriai")
+print(f"t-SNE be išskirčių: {n_2D_be} klasteriai")
+
+# Vizualus palyginimas
+vizualizuoti_klasterius_sujungta(
+    [X_2D_su_isskirtim, X_2D_be_isskirciu],
+    [klasteriai_2D_su, klasteriai_2D_be],
+    [f"t-SNE su išskirtimis ({n_2D_su} klasteriai, n={len(X_2D_su_isskirtim)})",
+     f"t-SNE be išskirčių ({n_2D_be} klasteriai, n={len(X_2D_be_isskirciu)})"],
+    "palyginimas_tsne_su_vs_be_isskirciu"
 )
 
-# Papildoma analizė su įprastais išskirčiais (iqr_mult=1.5)
-print("\n" + "="*60)
-print("IŠSKIRČIŲ ANALIZĖ SU IQR METODU (įprasti išskirtys)")
-print("="*60)
+print("✓ Sukurtas grafikas: grafikai/hierarchinis/palyginimas_tsne_su_vs_be_isskirciu.png")
+
 
 # Dimensijų mažinimo įtaka
 vizualizuoti_klasterius_sujungta(
