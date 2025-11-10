@@ -274,9 +274,7 @@ analizuoti_isksirtis_iqr_ir_vizualizuoti(
     "Atrinkti požymiai", "palyginimas_isksirtys_iqr_atrinkta", iqr_mult=3.0
 )
 
-# ================================================================
 # PALYGINIMAS: t-SNE su išskirtimis vs be išskirčių
-# ================================================================
 print("\n" + "="*60)
 print("PALYGINIMAS: t-SNE su išskirtimis vs be išskirčių")
 print("="*60)
