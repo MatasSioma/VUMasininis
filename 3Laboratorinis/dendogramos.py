@@ -4,7 +4,6 @@ import numpy as np
 from matplotlib import pyplot as plt
 from scipy.cluster.hierarchy import dendrogram, linkage, fcluster
 from sklearn.manifold import TSNE
-from sklearn.ensemble import IsolationForest
 
 # Pagalbinės funkcijos
 def load_numeric_csv(path):
@@ -17,6 +16,15 @@ def load_numeric_csv(path):
 def load_full_csv(path):
     df = pd.read_csv(path, sep=';')
     return df
+
+def extreme_outlier_mask_iqr(X_std: np.ndarray, iqr_mult: float = 3.0):
+    q1 = np.percentile(X_std, 25, axis=0)
+    q3 = np.percentile(X_std, 75, axis=0)
+    iqr = q3 - q1
+    lower = q1 - iqr_mult * iqr
+    upper = q3 + iqr_mult * iqr
+    mask = np.any((X_std < lower) | (X_std > upper), axis=1)
+    return mask
 
 def print_dendrograma(Z, aibes_pavadinimas, failo_pavadinimas, color_threshold_ratio=0.7):
     plt.figure(figsize=(12, 7))
@@ -72,14 +80,14 @@ def vizualizuoti_klasterius_sujungta(X_list, clusters_list, pavadinimai, failo_p
     plt.close()
 
 def vizualizuoti_palyginima(X_2d, tiksliosios_klases, hierarchiniai_klasteriai, failo_pavadinimas):
-    fig, axes = plt.subplots(1, 3, figsize=(15, 5))
+    _, axes = plt.subplots(1, 3, figsize=(15, 5))
 
     unique_classes = sorted(np.unique(tiksliosios_klases))
     n_classes = len(unique_classes)
-    scatter1 = axes[0].scatter(X_2d[:, 0], X_2d[:, 1], c=tiksliosios_klases, cmap='viridis', s=35, alpha=0.7)
+    axes[0].scatter(X_2d[:, 0], X_2d[:, 1], c=tiksliosios_klases, cmap='viridis', s=35, alpha=0.7)
     axes[0].set_title('t-SNE su tiksliosiomis klasėmis')
 
-    scatter2 = axes[1].scatter(X_2d[:, 0], X_2d[:, 1], c=hierarchiniai_klasteriai, cmap='tab10', s=35, alpha=0.7)
+    axes[1].scatter(X_2d[:, 0], X_2d[:, 1], c=hierarchiniai_klasteriai, cmap='tab10', s=35, alpha=0.7)
     axes[1].set_title('t-SNE su klasterių klasėmis')
 
     confusion_map = np.zeros((n_classes, len(np.unique(hierarchiniai_klasteriai))))
@@ -214,32 +222,75 @@ spausdinti_neatitikimus(tiksliosios_klases, klasteriai_2D_rekom)
 spausdinti_neatitikimus(tiksliosios_klases, klasteriai_2D_plus1)
 spausdinti_neatitikimus(tiksliosios_klases, klasteriai_2D_8)
 
-# 5. Išskirčių įtakos analizė visoms aibėms
-def analizuoti_isksirtis_ir_vizualizuoti(X, klasteriu_kiekis, pavadinimas, failo_pavadinimas):
+# 5. Išskirčių įtakos analizė naudojant IQR metodą
+def analizuoti_isksirtis_iqr_ir_vizualizuoti(X, klasteriu_kiekis, pavadinimas, failo_pavadinimas, iqr_mult=3.0):
+    """
+    Analizuoja išskirčių įtaką naudojant IQR metodą.
+    
+    Parameters:
+    -----------
+    iqr_mult : float
+        IQR daugiklis (3.0 = ekstremalūs išskirtys, 1.5 = įprasti išskirtys)
+    """
     print(f"\nAnalizuojama aibė: {pavadinimas}")
-    detektorius = IsolationForest(contamination=0.05, random_state=42)
-    outlier_labels = detektorius.fit_predict(X)
-    n_outliers = np.sum(outlier_labels == -1)
+    print(f"Naudojamas IQR daugiklis: {iqr_mult}")
+    
+    # Detektuojame išskirčius naudojant IQR metodą
+    outlier_mask = extreme_outlier_mask_iqr(X, iqr_mult=iqr_mult)
+    n_outliers = np.sum(outlier_mask)
     print(f"Rasta {n_outliers} išskirčių iš {len(X)} ({(n_outliers/len(X))*100:.2f}%).")
 
-    X_be_isksirciu = X[outlier_labels == 1]
+    # Pašaliname išskirčius
+    X_be_isksirciu = X[~outlier_mask]
+    
+    if len(X_be_isksirciu) < 2:
+        print(f"ĮSPĖJIMAS: Po išskirčių pašalinimo liko per mažai duomenų ({len(X_be_isksirciu)})")
+        return
+    
+    # Klasterizavimas be išskirčių
     Z_be_isksirciu = linkage(X_be_isksirciu, method=METHOD)
     klasteriai_po = atlikti_klasterizavima(Z_be_isksirciu)
     n_po = len(set(klasteriai_po))
 
     print(f"Be išskirčių – rekomenduojama {n_po} klasterių.")
+    
+    # Klasterizavimas su tuo pačiu klasterių skaičiumi kaip originale
+    klasteriai_su = atlikti_klasterizavima_su_n(linkage(X, method=METHOD), len(set(klasteriu_kiekis)))
+    klasteriai_be = atlikti_klasterizavima_su_n(Z_be_isksirciu, len(set(klasteriu_kiekis)))
+    
     vizualizuoti_klasterius_sujungta(
         [X, X_be_isksirciu],
-        [klasteriu_kiekis, klasteriu_kiekis],
-        [f"Su išskirtimis ({len(set(klasteriu_kiekis))} klasteriai)",
-         f"Be išskirčių ({n_po} klasteriai)"],
+        [klasteriai_su, klasteriai_be],
+        [f"Su išskirtimis ({len(set(klasteriai_su))} klasteriai, n={len(X)})",
+         f"Be išskirčių ({len(set(klasteriai_be))} klasteriai, n={len(X_be_isksirciu)})"],
         failo_pavadinimas
     )
     print(f"Sukurtas grafikas: {failo_pavadinimas}.png")
 
-analizuoti_isksirtis_ir_vizualizuoti(X_visi_pozymiai, klasteriai_visi_rekom, "Visi požymiai", "palyginimas_isksirtys_visi")
-analizuoti_isksirtis_ir_vizualizuoti(X_atrinkta, klasteriai_atrinkta_rekom, "Atrinkti požymiai", "palyginimas_isksirtys_atrinkta")
-analizuoti_isksirtis_ir_vizualizuoti(X_2D, klasteriai_2D_rekom, "t-SNE (2D)", "palyginimas_isksirtys_2D")
+# Analizė su IQR metodu (ekstremalūs išskirtys, iqr_mult=3.0)
+print("\n" + "="*60)
+print("IŠSKIRČIŲ ANALIZĖ SU IQR METODU (ekstremalūs išskirtys)")
+print("="*60)
+
+analizuoti_isksirtis_iqr_ir_vizualizuoti(
+    X_visi_pozymiai, klasteriai_visi_rekom, 
+    "Visi požymiai", "palyginimas_isksirtys_iqr_visi", iqr_mult=3.0
+)
+
+analizuoti_isksirtis_iqr_ir_vizualizuoti(
+    X_atrinkta, klasteriai_atrinkta_rekom, 
+    "Atrinkti požymiai", "palyginimas_isksirtys_iqr_atrinkta", iqr_mult=3.0
+)
+
+analizuoti_isksirtis_iqr_ir_vizualizuoti(
+    X_2D, klasteriai_2D_rekom, 
+    "t-SNE (2D)", "palyginimas_isksirtys_iqr_2D", iqr_mult=3.0
+)
+
+# Papildoma analizė su įprastais išskirčiais (iqr_mult=1.5)
+print("\n" + "="*60)
+print("IŠSKIRČIŲ ANALIZĖ SU IQR METODU (įprasti išskirtys)")
+print("="*60)
 
 # Dimensijų mažinimo įtaka
 vizualizuoti_klasterius_sujungta(
@@ -250,5 +301,5 @@ vizualizuoti_klasterius_sujungta(
     "palyginimas_dimensiju_mazinimas"
 )
 
-print("Sukurtas grafikas: dimensijų mažinimo įtaka (originalūs vs t-SNE duomenys)")
+print("\nSukurtas grafikas: dimensijų mažinimo įtaka (originalūs vs t-SNE duomenys)")
 print("="*60)
