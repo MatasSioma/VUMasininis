@@ -239,7 +239,7 @@ def vizualizuoti_palyginima(X2: np.ndarray, y_true: np.ndarray, y_pred: np.ndarr
 
     print(f"Bendrai neatitinkančių objektų: {mism_cnt} / {total_cnt} ({format_percent(mism_rate)})")
     for klas, kiekis in sorted(per_klase.items(), key=lambda x: x[0]):
-        print(f"Neatitinkančių objektų kiekis {klas} klasei: {kiekis}")
+        print(f"Neatitinkančių objektų kiekis {int(klas)} klasei: {kiekis}")
 
 
 def kmeans_with_outliers(X_raw: np.ndarray, df_numeric: pd.DataFrame,

@@ -26,7 +26,7 @@ def extreme_outlier_mask_iqr(X_std: np.ndarray, iqr_mult: float = 3.0):
     mask = np.any((X_std < lower) | (X_std > upper), axis=1)
     return mask
 
-def print_dendrograma(Z, aibes_pavadinimas, failo_pavadinimas, color_threshold_ratio=0.7):
+def print_dendograma(Z, aibes_pavadinimas, failo_pavadinimas, color_threshold_ratio=0.7):
     plt.figure(figsize=(12, 7))
     max_d = max(Z[:, 2])
     color_threshold = max_d * color_threshold_ratio
@@ -37,7 +37,7 @@ def print_dendrograma(Z, aibes_pavadinimas, failo_pavadinimas, color_threshold_r
         above_threshold_color='gray',
     )
 
-    plt.title(f"Dendrograma (aibė = {aibes_pavadinimas}, metodas = {METHOD})")
+    plt.title(f"Dendograma (aibė = {aibes_pavadinimas}, metodas = {METHOD})")
     plt.xlabel("Duomenų taškai")
     plt.ylabel("Euklidinis atstumas")
     plt.axhline(y=color_threshold, c='red', lw=1.5, linestyle='--', label='Spalvų riba')
@@ -165,10 +165,10 @@ base_dir_klasteriai = 'grafikai/hierarchinis'
 os.makedirs(base_dir_dendograma, exist_ok=True)
 os.makedirs(base_dir_klasteriai, exist_ok=True)
 
-# Dendrogramos
-print_dendrograma(Z_visi_pozymiai, 'visi požymiai', 'visi_pozymiai')
-print_dendrograma(Z_atrinkta, 'atrinkti požymiai', 'atrinkti_pozymiai')
-print_dendrograma(Z_2D, 'sumažinta iki 2D (t-SNE)', '2D')
+# Dendogramos
+print_dendograma(Z_visi_pozymiai, 'visi požymiai', 'visi_pozymiai')
+print_dendograma(Z_atrinkta, 'atrinkti požymiai', 'atrinkti_pozymiai')
+print_dendograma(Z_2D, 'sumažinta iki 2D (t-SNE)', '2D')
 
 # Klasterizavimas
 klasteriai_visi_rekom = atlikti_klasterizavima(Z_visi_pozymiai)
