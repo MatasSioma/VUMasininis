@@ -8,6 +8,8 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.impute import SimpleImputer
 from sklearn.manifold import TSNE
 from sklearn.cluster import KMeans
+from sklearn.metrics import silhouette_score
+from kneed import KneeLocator
 
 PRINT_CLUSTER_STATS = False
 PERPLEXITY = 50
@@ -19,20 +21,14 @@ base_dir_results = 'rezultatai'
 os.makedirs(base_dir_kmeans, exist_ok=True)
 os.makedirs(base_dir_results, exist_ok=True)
 
-
-# ============================ ĮKĖLIMAS ============================
-
 def load_numeric_csv(path):
     df = pd.read_csv(path, sep=';')
     features = [c for c in df.columns if c != 'label']
     Xdf = df[features].apply(pd.to_numeric, errors='coerce').dropna()
-    return Xdf.values, Xdf  # numpy ir DataFrame statistikoms
+    return Xdf.values, Xdf
 
 def load_full_csv(path):
     return pd.read_csv(path, sep=';')
-
-
-# ============================ PAGALBINĖS ============================
 
 def standartizuoti(X: np.ndarray):
     imputer = SimpleImputer(strategy='median')
@@ -47,11 +43,6 @@ def tsne_2d(X: np.ndarray):
     return tsne.fit_transform(X)
 
 def best_k_by_elbow_kmeans(X_std: np.ndarray, k_min=2, k_max=24):
-    """
-    Grąžina optimalų k pagal „elbow“ metodą, naudodamas KMeans inerciją.
-    „Alkūnės“ taškas imamas kaip didžiausias nuokrypis
-    nuo tiesės, jungiančios (k_min, inertia_min) ir (k_max, inertia_max).
-    """
     ks, inertias = [], []
     for k in range(k_min, k_max + 1):
         try:
@@ -62,16 +53,16 @@ def best_k_by_elbow_kmeans(X_std: np.ndarray, k_min=2, k_max=24):
             inertias.append(np.inf)
         ks.append(k)
 
-    x = np.array(ks, dtype=float)
-    y = np.array(inertias, dtype=float)
+    best_k = None
+    kl = KneeLocator(
+        ks, inertias,
+        curve='convex', direction='decreasing',
+        interp_method='polynomial'
+    )
+    if kl.elbow is not None:
+        best_k = int(kl.elbow)
 
-    p1 = np.array([x[0], y[0]])
-    p2 = np.array([x[-1], y[-1]])
-    v = p2 - p1
-    vv = np.dot(v, v) if np.dot(v, v) != 0 else 1.0
-    distances = np.abs(np.cross(v, np.stack([x, y], axis=1) - p1)) / np.sqrt(vv)
-    best_idx = int(np.argmax(distances))
-    return ks[best_idx], ks, inertias
+    return best_k, ks, inertias
 
 def spausdinti_klasterio_statistika(df_numeric: pd.DataFrame, labels: np.ndarray, aibes_pavadinimas: str):
     if not PRINT_CLUSTER_STATS:
@@ -106,13 +97,9 @@ def extreme_outlier_mask_iqr(X_std: np.ndarray, iqr_mult: float = 3.0):
     return mask
 
 def format_percent(p: float) -> str:
-    # 0.2033 -> "20,33 %"
     return f"{p*100:.2f}".replace('.', ',') + " %"
 
 def mismatch_percentage(y_true: np.ndarray, y_pred_clusters: np.ndarray, mask: np.ndarray | None = None) -> float:
-    """
-    (Palikta suderinamumui) Grąžina neatitikimo procentą.
-    """
     if mask is None:
         idx = np.ones_like(y_true, dtype=bool)
     else:
@@ -136,7 +123,6 @@ def mismatch_percentage(y_true: np.ndarray, y_pred_clusters: np.ndarray, mask: n
 
 def mismatch_stats_by_class(y_true: np.ndarray, y_pred_clusters: np.ndarray, mask: np.ndarray | None = None):
     if mask is None:
-        idx = np.ones_like(y_true), 
         idx = np.ones_like(y_true, dtype=bool)
     else:
         idx = mask.astype(bool)
@@ -164,8 +150,6 @@ def mismatch_stats_by_class(y_true: np.ndarray, y_pred_clusters: np.ndarray, mas
     neatitikimo_dalis = (neatitinkantys_viso / viso) if viso else 0.0
     return per_klase, neatitinkantys_viso, viso, neatitikimo_dalis
 
-
-# ============================ BRAIŽYMAS ============================
 
 def plot_outliers_overview(X_raw: np.ndarray, out_mask: np.ndarray, title: str, save_path: str):
     X2 = X_raw if X_raw.shape[1] <= 2 else tsne_2d(X_raw)
@@ -258,8 +242,6 @@ def vizualizuoti_palyginima(X2: np.ndarray, y_true: np.ndarray, y_pred: np.ndarr
         print(f"Neatitinkančių objektų kiekis {klas} klasei: {kiekis}")
 
 
-# ============================ KMEANS EIGOS ============================
-
 def kmeans_with_outliers(X_raw: np.ndarray, df_numeric: pd.DataFrame,
                          aibes_pavadinimas: str, failo_prefix: str,
                          k_min=2, k_max=24):
@@ -267,9 +249,11 @@ def kmeans_with_outliers(X_raw: np.ndarray, df_numeric: pd.DataFrame,
     best_k, ks, inertias = best_k_by_elbow_kmeans(X_std, k_min=k_min, k_max=k_max)
 
     plt.figure(figsize=(8, 5))
-    plt.plot(ks, inertias, marker='o'); plt.axvline(best_k, ls='--')
+    plt.plot(ks, inertias, marker='o')
+    plt.axvline(best_k, ls='--')
     plt.title(f"Optimalus k pagal „Elbow“ – {aibes_pavadinimas}, best k={best_k}")
-    plt.xlabel("k (klasterių skaičius)"); plt.ylabel("Inercija (sum of squared distances)")
+    plt.xlabel("k (klasterių skaičius)")
+    plt.ylabel("Kvadratinė paklaida")
     plt.tight_layout()
     plt.savefig(os.path.join(base_dir_kmeans, f"elbow_curve_{failo_prefix}.png"), dpi=300)
     plt.close()
@@ -334,8 +318,6 @@ def kmeans_no_outliers_with_fixed_k(X_raw: np.ndarray, df_numeric: pd.DataFrame,
 
     return labels_all, out_mask, X2_in
 
-
-# ============================ PAGRINDINĖ EIGA ============================
 
 if __name__ == "__main__":
     kelias_visi = '../pilna_EKG_pupsniu_analize_uzpildyta_medianomis_visi_normuota_pagal_minmax.csv'
