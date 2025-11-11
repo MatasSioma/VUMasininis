@@ -305,7 +305,7 @@ vizualizuoti_klasterius_sujungta(
     "palyginimas_tsne_su_vs_be_isskirciu"
 )
 
-print("✓ Sukurtas grafikas: grafikai/hierarchinis/palyginimas_tsne_su_vs_be_isskirciu.png")
+print("Sukurtas grafikas: grafikai/hierarchinis/palyginimas_tsne_su_vs_be_isskirciu.png")
 
 
 # Dimensijų mažinimo įtaka
