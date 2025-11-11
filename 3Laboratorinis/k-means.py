@@ -318,6 +318,17 @@ def kmeans_no_outliers_with_fixed_k(X_raw: np.ndarray, df_numeric: pd.DataFrame,
 
     return labels_all, out_mask, X2_in
 
+def _save_k_vs_kp1(X2, labels_k, labels_kp1, tag, k, filename):
+        fig, axes = plt.subplots(1, 2, figsize=(12, 5))
+        axes[0].scatter(X2[:, 0], X2[:, 1], c=labels_k,    cmap='tab10', s=30)
+        axes[0].set_title(f"{tag} – k={k}")
+        axes[1].scatter(X2[:, 0], X2[:, 1], c=labels_kp1,  cmap='tab10', s=30)
+        axes[1].set_title(f"{tag} – k={k+1}")
+        for ax in axes:
+            ax.set_xticks([]); ax.set_yticks([])
+        plt.tight_layout()
+        plt.savefig(os.path.join(base_dir_kmeans, filename), dpi=300)
+        plt.close()
 
 if __name__ == "__main__":
     kelias_visi = '../pilna_EKG_pupsniu_analize_uzpildyta_medianomis_visi_normuota_pagal_minmax.csv'
@@ -342,6 +353,32 @@ if __name__ == "__main__":
         [f'{tag_visi} (k={k_visi})', f'{tag_atr} (k={k_atr})', f'{tag_2d} (k={k_2d})'],
         save_name='kmeans_trys_aibes_with_outliers.png',
         exclude_masks=None
+    )
+
+    #Palyginimas k, k+1
+    labels_visi_w_kp1 = KMeans(n_clusters=k_visi + 1, random_state=RANDOM_STATE, n_init=10).fit_predict(Xstd_visi_w)
+    labels_atr_w_kp1  = KMeans(n_clusters=k_atr  + 1, random_state=RANDOM_STATE, n_init=10).fit_predict(Xstd_atr_w)
+    labels_2d_w_kp1   = KMeans(n_clusters=k_2d   + 1, random_state=RANDOM_STATE, n_init=10).fit_predict(Xstd_2d_w)
+
+    # 1) Visi požymiai
+    _save_k_vs_kp1(
+        X2_visi_w, labels_visi_w, labels_visi_w_kp1,
+        tag_visi, k_visi,
+        "kmeans_visi_k_vs_kplus1_with_outliers.png"
+    )
+
+    # 2) Atrinkti požymiai
+    _save_k_vs_kp1(
+        X2_atr_w, labels_atr_w, labels_atr_w_kp1,
+        tag_atr, k_atr,
+        "kmeans_atr_k_vs_kplus1_with_outliers.png"
+    )
+
+    # 3) 2D duomenys
+    _save_k_vs_kp1(
+        X2_2d_w, labels_2d_w, labels_2d_w_kp1,
+        tag_2d, k_2d,
+        "kmeans_2d_k_vs_kplus1_with_outliers.png"
     )
 
     labels_visi_n, out_visi, X2_visi_n = kmeans_no_outliers_with_fixed_k(
