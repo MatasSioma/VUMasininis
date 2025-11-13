@@ -79,7 +79,7 @@ def vizualizuoti_klasterius_sujungta(X_list, clusters_list, pavadinimai, failo_p
         # Add legend with cluster labels
         unique_clusters = np.unique(clusters)
         legend_elements = [Patch(facecolor=scatter.cmap(scatter.norm(cluster)), 
-                                 label=f'Klasteris {cluster}')
+                                 label=f'Klasteris {cluster - 1}')
                           for cluster in unique_clusters]
         axes[i].legend(handles=legend_elements, loc='best', fontsize=8)
 
@@ -106,7 +106,7 @@ def vizualizuoti_palyginima(X_2d, tiksliosios_klases, hierarchiniai_klasteriai, 
     axes[1].set_title('t-SNE su klasterių klasėmis')
     unique_clusters = np.unique(hierarchiniai_klasteriai)
     legend_elements_clusters = [Patch(facecolor=scatter2.cmap(scatter2.norm(cluster)), 
-                                      label=f'Klasteris {cluster}')
+                                      label=f'Klasteris {cluster - 1}')
                                 for cluster in unique_clusters]
     axes[1].legend(handles=legend_elements_clusters, loc='best', fontsize=8)
 
