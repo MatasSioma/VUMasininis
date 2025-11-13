@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
 from matplotlib.lines import Line2D
+from matplotlib.patches import Patch
 
 from sklearn.preprocessing import StandardScaler
 from sklearn.impute import SimpleImputer
@@ -167,11 +168,24 @@ def plot_outliers_overview(X_raw: np.ndarray, out_mask: np.ndarray, title: str, 
 def scatter_clusters(X2: np.ndarray, labels: np.ndarray, title: str, save_path: str, exclude_mask: np.ndarray | None = None):
     plt.figure(figsize=(6, 5))
     if exclude_mask is None:
-        plt.scatter(X2[:, 0], X2[:, 1], c=labels, cmap='tab10', s=35)
+        scatter = plt.scatter(X2[:, 0], X2[:, 1], c=labels, cmap='tab10', s=35)
+        plot_labels = labels
     else:
         keep = ~exclude_mask
-        plt.scatter(X2[keep, 0], X2[keep, 1], c=labels[keep], cmap='tab10', s=35)
+        scatter = plt.scatter(X2[keep, 0], X2[keep, 1], c=labels[keep], cmap='tab10', s=35)
+        plot_labels = labels[keep]
+    
     plt.title(title)
+    
+    # Add legend with cluster labels
+    unique_clusters = np.unique(plot_labels)
+    legend_elements = [Patch(facecolor=scatter.cmap(scatter.norm(cluster)), 
+                             label=f'Klasteris {cluster}')
+                      for cluster in unique_clusters]
+    leg = plt.legend(handles=legend_elements, loc='best', fontsize=8, frameon=True)
+    leg.get_frame().set_edgecolor('black')
+    leg.get_frame().set_linewidth(0.8)
+    
     plt.xticks([]); plt.yticks([])
     plt.tight_layout()
     plt.savefig(save_path, dpi=300)
@@ -183,12 +197,25 @@ def vizualizuoti_klasterius_sujungta(X2_list, labels_list, titles_list, save_nam
     fig, axes = plt.subplots(1, 3, figsize=(15, 5))
     for ax, X2, lbls, ttl, ex in zip(axes, X2_list, labels_list, titles_list, exclude_masks):
         if ex is None:
-            ax.scatter(X2[:, 0], X2[:, 1], c=lbls, cmap='tab10', s=35)
+            scatter = ax.scatter(X2[:, 0], X2[:, 1], c=lbls, cmap='tab10', s=35)
+            plot_labels = lbls
         else:
             keep = ~ex
-            ax.scatter(X2[keep, 0], X2[keep, 1], c=lbls[keep], cmap='tab10', s=35)
+            scatter = ax.scatter(X2[keep, 0], X2[keep, 1], c=lbls[keep], cmap='tab10', s=35)
+            plot_labels = lbls[keep]
+        
         ax.set_title(f"KMeans\n({ttl})")
         ax.set_xticks([]); ax.set_yticks([])
+        
+        # Add legend with cluster labels
+        unique_clusters = np.unique(plot_labels)
+        legend_elements = [Patch(facecolor=scatter.cmap(scatter.norm(cluster)), 
+                                 label=f'Klasteris {cluster}')
+                          for cluster in unique_clusters]
+        leg = ax.legend(handles=legend_elements, loc='best', fontsize=7, frameon=True)
+        leg.get_frame().set_edgecolor('black')
+        leg.get_frame().set_linewidth(0.8)
+    
     plt.tight_layout()
     plt.savefig(os.path.join(base_dir_kmeans, save_name), dpi=300)
     plt.close()
@@ -206,12 +233,30 @@ def vizualizuoti_palyginima(X2: np.ndarray, y_true: np.ndarray, y_pred: np.ndarr
     mismatch_txt = f"{format_percent(mism_rate)} neatitinka"
 
     fig, axes = plt.subplots(1, 3, figsize=(15, 5))
-    axes[0].scatter(X2k[:, 0], X2k[:, 1], c=yt, cmap='viridis', s=35, alpha=0.8)
+    
+    # First plot: True classes with legend
+    scatter1 = axes[0].scatter(X2k[:, 0], X2k[:, 1], c=yt, cmap='viridis', s=35, alpha=0.8)
     axes[0].set_title(f"{dataset_tag}: tiksliosios klasės")
+    unique_classes = np.unique(yt)
+    legend_elements_classes = [Patch(facecolor=scatter1.cmap(scatter1.norm(cls)), 
+                                     label=f'Klasė {int(cls)}')
+                               for cls in unique_classes]
+    leg1 = axes[0].legend(handles=legend_elements_classes, loc='best', fontsize=8, frameon=True)
+    leg1.get_frame().set_edgecolor('black')
+    leg1.get_frame().set_linewidth(0.8)
 
-    axes[1].scatter(X2k[:, 0], X2k[:, 1], c=yp, cmap='tab10', s=35, alpha=0.8)
+    # Second plot: K-means clusters with legend
+    scatter2 = axes[1].scatter(X2k[:, 0], X2k[:, 1], c=yp, cmap='tab10', s=35, alpha=0.8)
     axes[1].set_title(f"{dataset_tag}: KMeans klasteriai")
+    unique_clusters = np.unique(yp)
+    legend_elements_clusters = [Patch(facecolor=scatter2.cmap(scatter2.norm(cluster)), 
+                                      label=f'Klasteris {cluster}')
+                                for cluster in unique_clusters]
+    leg2 = axes[1].legend(handles=legend_elements_clusters, loc='best', fontsize=8, frameon=True)
+    leg2.get_frame().set_edgecolor('black')
+    leg2.get_frame().set_linewidth(0.8)
 
+    # Third plot: Match/mismatch
     classes = np.unique(yt)
     dominant = {}
     for c in classes:
@@ -227,8 +272,8 @@ def vizualizuoti_palyginima(X2: np.ndarray, y_true: np.ndarray, y_pred: np.ndarr
         Line2D([0], [0], marker='o', linestyle='', color='gray', label='Atitinka', markersize=7),
         Line2D([0], [0], marker='o', linestyle='', color='red',  label='Neatitinka', markersize=7),
     ]
-    leg = axes[2].legend(handles=handles, title=mismatch_txt, frameon=True, loc='best')
-    leg.get_frame().set_edgecolor('black'); leg.get_frame().set_linewidth(0.8)
+    leg3 = axes[2].legend(handles=handles, title=mismatch_txt, frameon=True, loc='best')
+    leg3.get_frame().set_edgecolor('black'); leg3.get_frame().set_linewidth(0.8)
 
     for ax in axes:
         ax.set_xlabel('Dimensija 1'); ax.set_ylabel('Dimensija 2')
@@ -251,7 +296,7 @@ def kmeans_with_outliers(X_raw: np.ndarray, df_numeric: pd.DataFrame,
     plt.figure(figsize=(8, 5))
     plt.plot(ks, inertias, marker='o')
     plt.axvline(best_k, ls='--')
-    plt.title(f"Optimalus k pagal „Elbow“ – {aibes_pavadinimas}, best k={best_k}")
+    plt.title(f"Optimalus k pagal Elbow – {aibes_pavadinimas}, best k={best_k}")
     plt.xlabel("k (klasterių skaičius)")
     plt.ylabel("Kvadratinė paklaida")
     plt.tight_layout()
@@ -319,16 +364,35 @@ def kmeans_no_outliers_with_fixed_k(X_raw: np.ndarray, df_numeric: pd.DataFrame,
     return labels_all, out_mask, X2_in
 
 def _save_k_vs_kp1(X2, labels_k, labels_kp1, tag, k, filename):
-        fig, axes = plt.subplots(1, 2, figsize=(12, 5))
-        axes[0].scatter(X2[:, 0], X2[:, 1], c=labels_k,    cmap='tab10', s=30)
-        axes[0].set_title(f"{tag} – k={k}")
-        axes[1].scatter(X2[:, 0], X2[:, 1], c=labels_kp1,  cmap='tab10', s=30)
-        axes[1].set_title(f"{tag} – k={k+1}")
-        for ax in axes:
-            ax.set_xticks([]); ax.set_yticks([])
-        plt.tight_layout()
-        plt.savefig(os.path.join(base_dir_kmeans, filename), dpi=300)
-        plt.close()
+    fig, axes = plt.subplots(1, 2, figsize=(12, 5))
+    
+    # k clusters
+    scatter1 = axes[0].scatter(X2[:, 0], X2[:, 1], c=labels_k, cmap='tab10', s=30)
+    axes[0].set_title(f"{tag} – k={k}")
+    unique_k = np.unique(labels_k)
+    legend_elements_k = [Patch(facecolor=scatter1.cmap(scatter1.norm(cluster)), 
+                               label=f'Klasteris {cluster}')
+                        for cluster in unique_k]
+    leg1 = axes[0].legend(handles=legend_elements_k, loc='best', fontsize=8, frameon=True)
+    leg1.get_frame().set_edgecolor('black')
+    leg1.get_frame().set_linewidth(0.8)
+    
+    # k+1 clusters
+    scatter2 = axes[1].scatter(X2[:, 0], X2[:, 1], c=labels_kp1, cmap='tab10', s=30)
+    axes[1].set_title(f"{tag} – k={k+1}")
+    unique_kp1 = np.unique(labels_kp1)
+    legend_elements_kp1 = [Patch(facecolor=scatter2.cmap(scatter2.norm(cluster)), 
+                                 label=f'Klasteris {cluster}')
+                          for cluster in unique_kp1]
+    leg2 = axes[1].legend(handles=legend_elements_kp1, loc='best', fontsize=8, frameon=True)
+    leg2.get_frame().set_edgecolor('black')
+    leg2.get_frame().set_linewidth(0.8)
+    
+    for ax in axes:
+        ax.set_xticks([]); ax.set_yticks([])
+    plt.tight_layout()
+    plt.savefig(os.path.join(base_dir_kmeans, filename), dpi=300)
+    plt.close()
 
 if __name__ == "__main__":
     kelias_visi = '../pilna_EKG_pupsniu_analize_uzpildyta_medianomis_visi_normuota_pagal_minmax.csv'
@@ -401,19 +465,43 @@ if __name__ == "__main__":
 
     fig, axes = plt.subplots(2, 3, figsize=(18, 10))
     # su išskirtimis
-    axes[0,0].scatter(X2_visi_w[:,0], X2_visi_w[:,1], c=labels_visi_w, cmap='tab10', s=30)
+    scatter00 = axes[0,0].scatter(X2_visi_w[:,0], X2_visi_w[:,1], c=labels_visi_w, cmap='tab10', s=30)
     axes[0,0].set_title(f"{tag_visi} – su išskirtimis (k={k_visi})")
-    axes[0,1].scatter(X2_atr_w[:,0], X2_atr_w[:,1], c=labels_atr_w, cmap='tab10', s=30)
+    unique_00 = np.unique(labels_visi_w)
+    legend_00 = [Patch(facecolor=scatter00.cmap(scatter00.norm(c)), label=f'Klasteris {c}') for c in unique_00]
+    axes[0,0].legend(handles=legend_00, loc='best', fontsize=6, frameon=True)
+    
+    scatter01 = axes[0,1].scatter(X2_atr_w[:,0], X2_atr_w[:,1], c=labels_atr_w, cmap='tab10', s=30)
     axes[0,1].set_title(f"{tag_atr} – su išskirtimis (k={k_atr})")
-    axes[0,2].scatter(X2_2d_w[:,0], X2_2d_w[:,1], c=labels_2d_w, cmap='tab10', s=30)
+    unique_01 = np.unique(labels_atr_w)
+    legend_01 = [Patch(facecolor=scatter01.cmap(scatter01.norm(c)), label=f'Klasteris {c}') for c in unique_01]
+    axes[0,1].legend(handles=legend_01, loc='best', fontsize=6, frameon=True)
+    
+    scatter02 = axes[0,2].scatter(X2_2d_w[:,0], X2_2d_w[:,1], c=labels_2d_w, cmap='tab10', s=30)
     axes[0,2].set_title(f"{tag_2d} – su išskirtimis (k={k_2d})")
+    unique_02 = np.unique(labels_2d_w)
+    legend_02 = [Patch(facecolor=scatter02.cmap(scatter02.norm(c)), label=f'Klasteris {c}') for c in unique_02]
+    axes[0,2].legend(handles=legend_02, loc='best', fontsize=6, frameon=True)
+    
     # be išskirčių
-    axes[1,0].scatter(X2_visi_n[:,0], X2_visi_n[:,1], c=labels_visi_n[~out_visi], cmap='tab10', s=30)
+    scatter10 = axes[1,0].scatter(X2_visi_n[:,0], X2_visi_n[:,1], c=labels_visi_n[~out_visi], cmap='tab10', s=30)
     axes[1,0].set_title(f"{tag_visi} – be išskirčių (k={k_visi})")
-    axes[1,1].scatter(X2_atr_n[:,0], X2_atr_n[:,1], c=labels_atr_n[~out_atr], cmap='tab10', s=30)
+    unique_10 = np.unique(labels_visi_n[~out_visi])
+    legend_10 = [Patch(facecolor=scatter10.cmap(scatter10.norm(c)), label=f'Klasteris {c}') for c in unique_10]
+    axes[1,0].legend(handles=legend_10, loc='best', fontsize=6, frameon=True)
+    
+    scatter11 = axes[1,1].scatter(X2_atr_n[:,0], X2_atr_n[:,1], c=labels_atr_n[~out_atr], cmap='tab10', s=30)
     axes[1,1].set_title(f"{tag_atr} – be išskirčių (k={k_atr})")
-    axes[1,2].scatter(X2_2d_n[:,0], X2_2d_n[:,1], c=labels_2d_n[~out_2d], cmap='tab10', s=30)
+    unique_11 = np.unique(labels_atr_n[~out_atr])
+    legend_11 = [Patch(facecolor=scatter11.cmap(scatter11.norm(c)), label=f'Klasteris {c}') for c in unique_11]
+    axes[1,1].legend(handles=legend_11, loc='best', fontsize=6, frameon=True)
+    
+    scatter12 = axes[1,2].scatter(X2_2d_n[:,0], X2_2d_n[:,1], c=labels_2d_n[~out_2d], cmap='tab10', s=30)
     axes[1,2].set_title(f"{tag_2d} – be išskirčių (k={k_2d})")
+    unique_12 = np.unique(labels_2d_n[~out_2d])
+    legend_12 = [Patch(facecolor=scatter12.cmap(scatter12.norm(c)), label=f'Klasteris {c}') for c in unique_12]
+    axes[1,2].legend(handles=legend_12, loc='best', fontsize=6, frameon=True)
+    
     for ax in axes.ravel():
         ax.set_xticks([]); ax.set_yticks([])
     plt.tight_layout()

@@ -4,6 +4,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 from scipy.cluster.hierarchy import dendrogram, linkage, fcluster
 from sklearn.manifold import TSNE
+from matplotlib.patches import Patch
 
 # Pagalbinės funkcijos
 def load_numeric_csv(path):
@@ -58,7 +59,7 @@ def atlikti_klasterizavima_su_n(Z, n_clusters):
     return clusters
 
 def vizualizuoti_klasterius_sujungta(X_list, clusters_list, pavadinimai, failo_pavadinimas):
-    fig, axes = plt.subplots(1, len(X_list), figsize=(5 * len(X_list), 5))
+    _, axes = plt.subplots(1, len(X_list), figsize=(5 * len(X_list), 5))
 
     if len(X_list) == 1:
         axes = [axes]
@@ -70,26 +71,46 @@ def vizualizuoti_klasterius_sujungta(X_list, clusters_list, pavadinimai, failo_p
         else:
             X_2d = X
 
-        axes[i].scatter(X_2d[:, 0], X_2d[:, 1], c=clusters, cmap='tab10', s=35)
+        scatter = axes[i].scatter(X_2d[:, 0], X_2d[:, 1], c=clusters, cmap='tab10', s=35)
         axes[i].set_title(f"Hierarchinis klasterizavimas\n({pavadinimas})")
         axes[i].set_xticks([])
         axes[i].set_yticks([])
+        
+        # Add legend with cluster labels
+        unique_clusters = np.unique(clusters)
+        legend_elements = [Patch(facecolor=scatter.cmap(scatter.norm(cluster)), 
+                                 label=f'Klasteris {cluster}')
+                          for cluster in unique_clusters]
+        axes[i].legend(handles=legend_elements, loc='best', fontsize=8)
 
     plt.tight_layout()
     plt.savefig(os.path.join(base_dir_klasteriai, f"{failo_pavadinimas}.png"), dpi=300)
     plt.close()
 
 def vizualizuoti_palyginima(X_2d, tiksliosios_klases, hierarchiniai_klasteriai, failo_pavadinimas):
-    _, axes = plt.subplots(1, 3, figsize=(15, 5))
+    fig, axes = plt.subplots(1, 3, figsize=(16, 5))
 
     unique_classes = sorted(np.unique(tiksliosios_klases))
     n_classes = len(unique_classes)
-    axes[0].scatter(X_2d[:, 0], X_2d[:, 1], c=tiksliosios_klases, cmap='viridis', s=35, alpha=0.7)
+    
+    # First plot: True classes with legend
+    scatter1 = axes[0].scatter(X_2d[:, 0], X_2d[:, 1], c=tiksliosios_klases, cmap='viridis', s=35, alpha=0.7)
     axes[0].set_title('t-SNE su tiksliosiomis klasėmis')
+    legend_elements_classes = [Patch(facecolor=scatter1.cmap(scatter1.norm(cls)), 
+                                     label=f'Klasė {cls}')
+                               for cls in unique_classes]
+    axes[0].legend(handles=legend_elements_classes, loc='best', fontsize=8)
 
-    axes[1].scatter(X_2d[:, 0], X_2d[:, 1], c=hierarchiniai_klasteriai, cmap='tab10', s=35, alpha=0.7)
+    # Second plot: Hierarchical clusters with legend
+    scatter2 = axes[1].scatter(X_2d[:, 0], X_2d[:, 1], c=hierarchiniai_klasteriai, cmap='tab10', s=35, alpha=0.7)
     axes[1].set_title('t-SNE su klasterių klasėmis')
+    unique_clusters = np.unique(hierarchiniai_klasteriai)
+    legend_elements_clusters = [Patch(facecolor=scatter2.cmap(scatter2.norm(cluster)), 
+                                      label=f'Klasteris {cluster}')
+                                for cluster in unique_clusters]
+    axes[1].legend(handles=legend_elements_clusters, loc='best', fontsize=8)
 
+    # Confusion map and accuracy calculation
     confusion_map = np.zeros((n_classes, len(np.unique(hierarchiniai_klasteriai))))
     for true_class in unique_classes:
         mask = tiksliosios_klases == true_class
@@ -118,7 +139,6 @@ def vizualizuoti_palyginima(X_2d, tiksliosios_klases, hierarchiniai_klasteriai, 
     axes[2].scatter(X_2d[:, 0], X_2d[:, 1], c=match_colors, s=35, alpha=0.8, edgecolors='black', linewidth=0.5)
     axes[2].set_title(f"Atitikimas pagal klasę\n{100-accuracy:.2f}% neatitinka")
 
-    from matplotlib.patches import Patch
     legend_elements = [
         Patch(facecolor='gray', edgecolor='black', label='Atitinka'),
         Patch(facecolor='red', edgecolor='black', label='Neatitinka')
