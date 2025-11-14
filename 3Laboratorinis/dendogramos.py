@@ -53,8 +53,8 @@ def spausdinti_klasterio_statistika(df_numeric: pd.DataFrame, labels: np.ndarray
             vmin = float(np.nanmin(col_vals))
             vmax = float(np.nanmax(col_vals))
             print(
-                f"  {col}: mean={mean:.6f}, median={median:.6f}, "
-                f"std={std if not np.isnan(std) else np.nan:.6f}, min={vmin:.6f}, max={vmax:.6f}"
+                f"  {col}: mean={mean:.4f}, median={median:.4f}, "
+                f"std={std if not np.isnan(std) else np.nan:.4f}, min={vmin:.4f}, max={vmax:.4f}"
             )
 
 def print_dendograma(Z, aibes_pavadinimas, failo_pavadinimas, color_threshold_ratio=0.7):
@@ -112,8 +112,8 @@ def vizualizuoti_klasterius_sujungta(X_list, clusters_list, pavadinimai, failo_p
                           for cluster in unique_clusters]
         axes[i].legend(handles=legend_elements, loc='best', fontsize=8)
 
-        if df_list is not None and i < len(df_list):
-            spausdinti_klasterio_statistika(df_list[i], clusters, pavadinimas)
+        # if df_list is not None and i < len(df_list):
+        #     spausdinti_klasterio_statistika(df_list[i], clusters, pavadinimas)
 
     plt.tight_layout()
     plt.savefig(os.path.join(base_dir_klasteriai, f"{failo_pavadinimas}.png"), dpi=300)
@@ -205,7 +205,7 @@ def spausdinti_2d_klasteriu_statistika_su_originaliais(df_original, klasteriai_2
     print(f"Klasterizacija: {aprasymas}")
     print("="*80)
 
-    spausdinti_klasterio_statistika(df_original, klasteriai_2d, aprasymas)
+    # spausdinti_klasterio_statistika(df_original, klasteriai_2d, aprasymas)
 
 X_visi_pozymiai, df_visi = load_numeric_csv('../pilna_EKG_pupsniu_analize_uzpildyta_medianomis_visi_normuota_pagal_minmax.csv')
 X_atrinkta, df_atrinkta = load_numeric_csv('duomenys/atrinkta_aibe.csv')
@@ -388,8 +388,8 @@ vizualizuoti_palyginima(
 print("\n" + "="*60)
 print("KLASTERIŲ STATISTIKA PAGAL ORIGINALIUS POŽYMIUS (2D klasterizacija)")
 print("="*60)
-spausdinti_klasterio_statistika(df_atrinkta, klasteriai_2D_rekom,
-                                 "t-SNE klasteriai su originaliais požymiais")
+# spausdinti_klasterio_statistika(df_atrinkta, klasteriai_2D_rekom,
+#                                  "t-SNE klasteriai su originaliais požymiais")
 
 # Hierarchinis klasterizavimas abiem
 Z_2D_su = linkage(X_2D_su_isskirtim, method=METHOD)
