@@ -12,7 +12,7 @@ from sklearn.cluster import KMeans
 from sklearn.metrics import silhouette_score
 from kneed import KneeLocator
 
-PRINT_CLUSTER_STATS = False
+PRINT_CLUSTER_STATS = True
 PERPLEXITY = 50
 TSNE_METRIC = 'canberra'
 RANDOM_STATE = 42
@@ -397,6 +397,7 @@ def _save_k_vs_kp1(X2, labels_k, labels_kp1, tag, k, filename):
 if __name__ == "__main__":
     kelias_visi = '../pilna_EKG_pupsniu_analize_uzpildyta_medianomis_visi_normuota_pagal_minmax.csv'
     kelias_atr  = 'duomenys/atrinkta_aibe.csv'
+    # kelias_2d   = 'duomenys/tsne_2d_data_be_isskirciu.csv'
     kelias_2d   = 'duomenys/tsne_2d_data.csv'
 
     X_visi_pozymiai, df_visi = load_numeric_csv(kelias_visi)
@@ -409,7 +410,9 @@ if __name__ == "__main__":
 
     labels_visi_w, k_visi, Xstd_visi_w, X2_visi_w = kmeans_with_outliers(X_visi_pozymiai, df_visi, 'Visi požymiai', 'visi_pozymiai')
     labels_atr_w,  k_atr,  Xstd_atr_w,  X2_atr_w  = kmeans_with_outliers(X_atrinkta,     df_atrinkta, 'Atrinkti požymiai', 'atrinkti_pozymiai')
+    labels_2d_w, k_2d, Xstd_2d_w, X2_2d_w   = kmeans_no_outliers_with_fixed_k(X_2D,            df_2D,      '2D duomenys', '2D',k_fixed=k_2d)
     labels_2d_w,   k_2d,   Xstd_2d_w,   X2_2d_w   = kmeans_with_outliers(X_2D,            df_2D,      '2D duomenys', '2D')
+    # k_2d = 6
 
     vizualizuoti_klasterius_sujungta(
         [X2_visi_w, X2_atr_w, X2_2d_w],
@@ -419,31 +422,31 @@ if __name__ == "__main__":
         exclude_masks=None
     )
 
-    #Palyginimas k, k+1
-    labels_visi_w_kp1 = KMeans(n_clusters=k_visi + 1, random_state=RANDOM_STATE, n_init=10).fit_predict(Xstd_visi_w)
-    labels_atr_w_kp1  = KMeans(n_clusters=k_atr  + 1, random_state=RANDOM_STATE, n_init=10).fit_predict(Xstd_atr_w)
-    labels_2d_w_kp1   = KMeans(n_clusters=k_2d   + 1, random_state=RANDOM_STATE, n_init=10).fit_predict(Xstd_2d_w)
+    # #Palyginimas k, k+1
+    # labels_visi_w_kp1 = KMeans(n_clusters=k_visi + 1, random_state=RANDOM_STATE, n_init=10).fit_predict(Xstd_visi_w)
+    # labels_atr_w_kp1  = KMeans(n_clusters=k_atr  + 1, random_state=RANDOM_STATE, n_init=10).fit_predict(Xstd_atr_w)
+    # labels_2d_w_kp1   = KMeans(n_clusters=k_2d   + 1, random_state=RANDOM_STATE, n_init=10).fit_predict(Xstd_2d_w)
 
-    # 1) Visi požymiai
-    _save_k_vs_kp1(
-        X2_visi_w, labels_visi_w, labels_visi_w_kp1,
-        tag_visi, k_visi,
-        "kmeans_visi_k_vs_kplus1_with_outliers.png"
-    )
+    # # 1) Visi požymiai
+    # _save_k_vs_kp1(
+    #     X2_visi_w, labels_visi_w, labels_visi_w_kp1,
+    #     tag_visi, k_visi,
+    #     "kmeans_visi_k_vs_kplus1_with_outliers.png"
+    # )
 
-    # 2) Atrinkti požymiai
-    _save_k_vs_kp1(
-        X2_atr_w, labels_atr_w, labels_atr_w_kp1,
-        tag_atr, k_atr,
-        "kmeans_atr_k_vs_kplus1_with_outliers.png"
-    )
+    # # 2) Atrinkti požymiai
+    # _save_k_vs_kp1(
+    #     X2_atr_w, labels_atr_w, labels_atr_w_kp1,
+    #     tag_atr, k_atr,
+    #     "kmeans_atr_k_vs_kplus1_with_outliers.png"
+    # )
 
-    # 3) 2D duomenys
-    _save_k_vs_kp1(
-        X2_2d_w, labels_2d_w, labels_2d_w_kp1,
-        tag_2d, k_2d,
-        "kmeans_2d_k_vs_kplus1_with_outliers.png"
-    )
+    # # 3) 2D duomenys
+    # _save_k_vs_kp1(
+    #     X2_2d_w, labels_2d_w, labels_2d_w_kp1,
+    #     tag_2d, k_2d,
+    #     "kmeans_2d_k_vs_kplus1_with_outliers.png"
+    # )
 
     labels_visi_n, out_visi, X2_visi_n = kmeans_no_outliers_with_fixed_k(
         X_visi_pozymiai, df_visi, 'Visi požymiai', 'visi_pozymiai', k_fixed=k_visi
