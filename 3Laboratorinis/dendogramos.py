@@ -6,13 +6,15 @@ from scipy.cluster.hierarchy import dendrogram, linkage, fcluster
 from sklearn.manifold import TSNE
 from matplotlib.patches import Patch
 
+PRINT_CLUSTER_STATS = True
+
 # Pagalbinės funkcijos
 def load_numeric_csv(path):
     df = pd.read_csv(path, sep=';')
     features = [col for col in df.columns if col != 'label']
     X = df[features].apply(pd.to_numeric, errors='coerce')
     X = X.dropna()
-    return X.values
+    return X.values, df[features].apply(pd.to_numeric, errors='coerce').dropna()
 
 def load_full_csv(path):
     df = pd.read_csv(path, sep=';')
@@ -26,6 +28,34 @@ def extreme_outlier_mask_iqr(X_std: np.ndarray, iqr_mult: float = 3.0):
     upper = q3 + iqr_mult * iqr
     mask = np.any((X_std < lower) | (X_std > upper), axis=1)
     return mask
+
+def spausdinti_klasterio_statistika(df_numeric: pd.DataFrame, labels: np.ndarray, aibes_pavadinimas: str):
+    if not PRINT_CLUSTER_STATS:
+        return
+
+    df_stats = df_numeric.reset_index(drop=True).copy()
+    labels = labels[:len(df_stats)]
+    df_stats['cluster'] = labels
+    grupes = df_stats.groupby('cluster')
+
+    print(f"\n{'='*60}")
+    print(f"Klasterių statistika: {aibes_pavadinimas}")
+    print(f"{'='*60}")
+
+    for cl, g in grupes:
+        print(f"\n[Klasteris {cl - 1}] n={len(g)}")
+        print("-" * 60)
+        for col in g.drop(columns=['cluster']).columns:
+            col_vals = pd.to_numeric(g[col], errors='coerce').to_numpy()
+            mean = float(np.nanmean(col_vals))
+            median = float(np.nanmedian(col_vals))
+            std = float(np.nanstd(col_vals, ddof=1)) if len(col_vals) > 1 else float('nan')
+            vmin = float(np.nanmin(col_vals))
+            vmax = float(np.nanmax(col_vals))
+            print(
+                f"  {col}: mean={mean:.4f}, median={median:.4f}, "
+                f"std={std if not np.isnan(std) else np.nan:.4f}, min={vmin:.4f}, max={vmax:.4f}"
+            )
 
 def print_dendograma(Z, aibes_pavadinimas, failo_pavadinimas, color_threshold_ratio=0.7):
     plt.figure(figsize=(12, 7))
@@ -58,7 +88,7 @@ def atlikti_klasterizavima_su_n(Z, n_clusters):
     clusters = fcluster(Z, t=n_clusters, criterion='maxclust')
     return clusters
 
-def vizualizuoti_klasterius_sujungta(X_list, clusters_list, pavadinimai, failo_pavadinimas):
+def vizualizuoti_klasterius_sujungta(X_list, clusters_list, pavadinimai, failo_pavadinimas, df_list=None):
     _, axes = plt.subplots(1, len(X_list), figsize=(5 * len(X_list), 5))
 
     if len(X_list) == 1:
@@ -75,42 +105,41 @@ def vizualizuoti_klasterius_sujungta(X_list, clusters_list, pavadinimai, failo_p
         axes[i].set_title(f"Hierarchinis klasterizavimas\n({pavadinimas})")
         axes[i].set_xticks([])
         axes[i].set_yticks([])
-        
-        # Add legend with cluster labels
+
         unique_clusters = np.unique(clusters)
-        legend_elements = [Patch(facecolor=scatter.cmap(scatter.norm(cluster)), 
+        legend_elements = [Patch(facecolor=scatter.cmap(scatter.norm(cluster)),
                                  label=f'Klasteris {cluster - 1}')
                           for cluster in unique_clusters]
         axes[i].legend(handles=legend_elements, loc='best', fontsize=8)
+
+        # if df_list is not None and i < len(df_list):
+        #     spausdinti_klasterio_statistika(df_list[i], clusters, pavadinimas)
 
     plt.tight_layout()
     plt.savefig(os.path.join(base_dir_klasteriai, f"{failo_pavadinimas}.png"), dpi=300)
     plt.close()
 
 def vizualizuoti_palyginima(X_2d, tiksliosios_klases, hierarchiniai_klasteriai, failo_pavadinimas):
-    fig, axes = plt.subplots(1, 3, figsize=(16, 5))
+    _, axes = plt.subplots(1, 3, figsize=(16, 5))
 
     unique_classes = sorted(np.unique(tiksliosios_klases))
     n_classes = len(unique_classes)
-    
-    # First plot: True classes with legend
+
     scatter1 = axes[0].scatter(X_2d[:, 0], X_2d[:, 1], c=tiksliosios_klases, cmap='viridis', s=35, alpha=0.7)
     axes[0].set_title('t-SNE su tiksliosiomis klasėmis')
-    legend_elements_classes = [Patch(facecolor=scatter1.cmap(scatter1.norm(cls)), 
+    legend_elements_classes = [Patch(facecolor=scatter1.cmap(scatter1.norm(cls)),
                                      label=f'Klasė {cls}')
                                for cls in unique_classes]
     axes[0].legend(handles=legend_elements_classes, loc='best', fontsize=8)
 
-    # Second plot: Hierarchical clusters with legend
     scatter2 = axes[1].scatter(X_2d[:, 0], X_2d[:, 1], c=hierarchiniai_klasteriai, cmap='tab10', s=35, alpha=0.7)
     axes[1].set_title('t-SNE su klasterių klasėmis')
     unique_clusters = np.unique(hierarchiniai_klasteriai)
-    legend_elements_clusters = [Patch(facecolor=scatter2.cmap(scatter2.norm(cluster)), 
+    legend_elements_clusters = [Patch(facecolor=scatter2.cmap(scatter2.norm(cluster)),
                                       label=f'Klasteris {cluster - 1}')
                                 for cluster in unique_clusters]
     axes[1].legend(handles=legend_elements_clusters, loc='best', fontsize=8)
 
-    # Confusion map and accuracy calculation
     confusion_map = np.zeros((n_classes, len(np.unique(hierarchiniai_klasteriai))))
     for true_class in unique_classes:
         mask = tiksliosios_klases == true_class
@@ -167,10 +196,20 @@ def spausdinti_neatitikimus(tiksliosios_klases, klasteriai):
 
     return neatitikimai_pagal_klase
 
-# Duomenų įkėlimas
-X_visi_pozymiai = load_numeric_csv('../pilna_EKG_pupsniu_analize_uzpildyta_medianomis_visi_normuota_pagal_minmax.csv')
-X_atrinkta = load_numeric_csv('duomenys/atrinkta_aibe.csv')
-X_2D = load_numeric_csv('duomenys/tsne_2d_data.csv')
+def spausdinti_2d_klasteriu_statistika_su_originaliais(df_original, klasteriai_2d, aprasymas):
+    if not PRINT_CLUSTER_STATS:
+        return
+
+    print("\n" + "="*80)
+    print(f"KLASTERIŲ STATISTIKA PAGAL ORIGINALIUS POŽYMIUS")
+    print(f"Klasterizacija: {aprasymas}")
+    print("="*80)
+
+    # spausdinti_klasterio_statistika(df_original, klasteriai_2d, aprasymas)
+
+X_visi_pozymiai, df_visi = load_numeric_csv('../pilna_EKG_pupsniu_analize_uzpildyta_medianomis_visi_normuota_pagal_minmax.csv')
+X_atrinkta, df_atrinkta = load_numeric_csv('duomenys/atrinkta_aibe.csv')
+X_2D, df_2D = load_numeric_csv('duomenys/tsne_2d_data.csv')
 
 df_tsne = load_full_csv('duomenys/tsne_2d_data.csv')
 tiksliosios_klases = df_tsne['label'].values
@@ -199,10 +238,11 @@ klasteriai_visi_8 = atlikti_klasterizavima_su_n(Z_visi_pozymiai, 8)
 vizualizuoti_klasterius_sujungta(
     [X_visi_pozymiai, X_visi_pozymiai, X_visi_pozymiai],
     [klasteriai_visi_rekom, klasteriai_visi_plus1, klasteriai_visi_8],
-    [f'visi požymiai ({n_rekom_visi} klasteriai)', 
+    [f'visi požymiai ({n_rekom_visi} klasteriai)',
      f'visi požymiai ({n_rekom_visi + 1} klasteriai)',
      'visi požymiai (8 klasteriai)'],
-    'visi_pozymiai_sujungta'
+    'visi_pozymiai_sujungta',
+    df_list=[df_visi, df_visi, df_visi]
 )
 
 klasteriai_atrinkta_rekom = atlikti_klasterizavima(Z_atrinkta)
@@ -213,11 +253,20 @@ klasteriai_atrinkta_8 = atlikti_klasterizavima_su_n(Z_atrinkta, 8)
 vizualizuoti_klasterius_sujungta(
     [X_atrinkta, X_atrinkta, X_atrinkta],
     [klasteriai_atrinkta_rekom, klasteriai_atrinkta_plus1, klasteriai_atrinkta_8],
-    [f'atrinkti požymiai ({n_rekom_atrinkta} klasteriai)', 
+    [f'atrinkti požymiai ({n_rekom_atrinkta} klasteriai)',
      f'atrinkti požymiai ({n_rekom_atrinkta + 1} klasteriai)',
      'atrinkti požymiai (8 klasteriai)'],
-    'atrinkti_pozymiai_sujungta'
+    'atrinkti_pozymiai_sujungta',
+    df_list=[df_atrinkta, df_atrinkta, df_atrinkta]
 )
+
+klasteriai_atrinkta_3 = atlikti_klasterizavima_su_n(Z_atrinkta, 3)
+
+# Spausdiname statistiką
+print("\n" + "="*60)
+print("ATRINKTOS AIBĖS STATISTIKA SU 3 KLASTERIAIS")
+print("="*60)
+spausdinti_klasterio_statistika(df_atrinkta, klasteriai_atrinkta_3, "Atrinkti požymiai (3 klasteriai)")
 
 klasteriai_2D_rekom = atlikti_klasterizavima(Z_2D)
 n_rekom_2D = len(set(klasteriai_2D_rekom))
@@ -227,10 +276,11 @@ klasteriai_2D_8 = atlikti_klasterizavima_su_n(Z_2D, 8)
 vizualizuoti_klasterius_sujungta(
     [X_2D, X_2D, X_2D],
     [klasteriai_2D_rekom, klasteriai_2D_plus1, klasteriai_2D_8],
-    [f't-SNE duomenys ({n_rekom_2D} klasteriai)', 
+    [f't-SNE duomenys ({n_rekom_2D} klasteriai)',
      f't-SNE duomenys ({n_rekom_2D + 1} klasteriai)',
      't-SNE duomenys (8 klasteriai)'],
-    '2D_sujungta'
+    '2D_sujungta',
+    df_list=[df_2D, df_2D, df_2D]
 )
 
 # Palyginimas
@@ -242,11 +292,21 @@ spausdinti_neatitikimus(tiksliosios_klases, klasteriai_2D_rekom)
 spausdinti_neatitikimus(tiksliosios_klases, klasteriai_2D_plus1)
 spausdinti_neatitikimus(tiksliosios_klases, klasteriai_2D_8)
 
+# STATISTIKA: Naudojant 2D klasterius su originaliais požymiais
+print("\n" + "#"*80)
+print("# APRAŠOMOJI STATISTIKA: 2D klasteriai su originaliais požymiais")
+print("#"*80)
+
+spausdinti_2d_klasteriu_statistika_su_originaliais(
+    df_atrinkta, klasteriai_2D_plus1,
+    f"t-SNE {n_rekom_2D+1} klasteriai (originalūs požymiai)"
+)
+
 # 5. Išskirčių įtakos analizė naudojant IQR metodą
-def analizuoti_isksirtis_iqr_ir_vizualizuoti(X, klasteriu_kiekis, pavadinimas, failo_pavadinimas, iqr_mult=3.0):
+def analizuoti_isksirtis_iqr_ir_vizualizuoti(X, df_numeric, klasteriu_kiekis, pavadinimas, failo_pavadinimas, iqr_mult=3.0):
     print(f"\nAnalizuojama aibė: {pavadinimas}")
     print(f"Naudojamas IQR daugiklis: {iqr_mult}")
-    
+
     # Detektuojame išskirčius naudojant IQR metodą
     outlier_mask = extreme_outlier_mask_iqr(X, iqr_mult=iqr_mult)
     n_outliers = np.sum(outlier_mask)
@@ -254,43 +314,45 @@ def analizuoti_isksirtis_iqr_ir_vizualizuoti(X, klasteriu_kiekis, pavadinimas, f
 
     # Pašaliname išskirčius
     X_be_isksirciu = X[~outlier_mask]
-    
+    df_be_isksirciu = df_numeric.iloc[~outlier_mask].reset_index(drop=True)
+
     if len(X_be_isksirciu) < 2:
         print(f"ĮSPĖJIMAS: Po išskirčių pašalinimo liko per mažai duomenų ({len(X_be_isksirciu)})")
         return
-    
+
     # Klasterizavimas be išskirčių
     Z_be_isksirciu = linkage(X_be_isksirciu, method=METHOD)
     klasteriai_po = atlikti_klasterizavima(Z_be_isksirciu)
     n_po = len(set(klasteriai_po))
 
     print(f"Be išskirčių – rekomenduojama {n_po} klasterių.")
-    
+
     # Klasterizavimas su tuo pačiu klasterių skaičiumi kaip originale
     klasteriai_su = atlikti_klasterizavima_su_n(linkage(X, method=METHOD), len(set(klasteriu_kiekis)))
     klasteriai_be = atlikti_klasterizavima_su_n(Z_be_isksirciu, len(set(klasteriu_kiekis)))
-    
+
     vizualizuoti_klasterius_sujungta(
         [X, X_be_isksirciu],
         [klasteriai_su, klasteriai_be],
         [f"Su išskirtimis ({len(set(klasteriai_su))} klasteriai, n={len(X)})",
          f"Be išskirčių ({len(set(klasteriai_be))} klasteriai, n={len(X_be_isksirciu)})"],
-        failo_pavadinimas
+        failo_pavadinimas,
+        df_list=[df_numeric, df_be_isksirciu]
     )
     print(f"Sukurtas grafikas: {failo_pavadinimas}.png")
 
-# Analizė su IQR metodu (ekstremalūs išskirtys, iqr_mult=3.0)
+# Analizė su IQR metodu (ekstremalios išskirtys, iqr_mult=3.0)
 print("\n" + "="*60)
-print("IŠSKIRČIŲ ANALIZĖ SU IQR METODU (ekstremalūs išskirtys)")
+print("IŠSKIRČIŲ ANALIZĖ SU IQR METODU (ekstremalios išskirtys)")
 print("="*60)
 
 analizuoti_isksirtis_iqr_ir_vizualizuoti(
-    X_visi_pozymiai, klasteriai_visi_rekom, 
+    X_visi_pozymiai, df_visi, klasteriai_visi_rekom,
     "Visi požymiai", "palyginimas_isksirtys_iqr_visi", iqr_mult=3.0
 )
 
 analizuoti_isksirtis_iqr_ir_vizualizuoti(
-    X_atrinkta, klasteriai_atrinkta_rekom, 
+    X_atrinkta, df_atrinkta, klasteriai_atrinkta_rekom,
     "Atrinkti požymiai", "palyginimas_isksirtys_iqr_atrinkta", iqr_mult=3.0
 )
 
@@ -300,8 +362,34 @@ print("PALYGINIMAS: t-SNE su išskirtimis vs be išskirčių")
 print("="*60)
 
 # Įkeliame abiejų t-SNE variantų duomenis
-X_2D_su_isskirtim = load_numeric_csv('duomenys/tsne_2d_data.csv')
-X_2D_be_isskirciu = load_numeric_csv('duomenys/tsne_2d_data_be_isskirciu.csv')
+X_2D_su_isskirtim, df_2D_su = load_numeric_csv('duomenys/tsne_2d_data.csv')
+X_2D_be_isskirciu, df_2D_be = load_numeric_csv('duomenys/tsne_2d_data_be_isskirciu.csv')
+
+df_tsne_su = load_full_csv('duomenys/tsne_2d_data.csv')
+df_tsne_be = load_full_csv('duomenys/tsne_2d_data_be_isskirciu.csv')
+
+# Gauname tiksliosias klases be išskirčių
+tiksliosios_klases_be_isskirciu = df_tsne_be['label'].values
+
+# Perskaičiuojame klasterius su duomenimis be išskirčių
+Z_2D_be = linkage(X_2D_be_isskirciu, method=METHOD)
+klasteriai_2D_be_rekom = atlikti_klasterizavima(Z_2D_be)
+n_rekom_2D_be = len(set(klasteriai_2D_be_rekom))
+
+# Dabar galime vizualizuoti su duomenimis be išskirčių
+vizualizuoti_palyginima(
+    X_2D_be_isskirciu,
+    tiksliosios_klases_be_isskirciu,
+    klasteriai_2D_be_rekom,
+    f'palyginimas_tsne_vs_hierarchinis_be_isskirciu_{n_rekom_2D_be}k'
+)
+
+# Naudojame klasterius iš 2D, bet statistiką skaičiuojame su originaliais požymiais
+print("\n" + "="*60)
+print("KLASTERIŲ STATISTIKA PAGAL ORIGINALIUS POŽYMIUS (2D klasterizacija)")
+print("="*60)
+# spausdinti_klasterio_statistika(df_atrinkta, klasteriai_2D_rekom,
+#                                  "t-SNE klasteriai su originaliais požymiais")
 
 # Hierarchinis klasterizavimas abiem
 Z_2D_su = linkage(X_2D_su_isskirtim, method=METHOD)
@@ -322,11 +410,12 @@ vizualizuoti_klasterius_sujungta(
     [klasteriai_2D_su, klasteriai_2D_be],
     [f"t-SNE su išskirtimis ({n_2D_su} klasteriai, n={len(X_2D_su_isskirtim)})",
      f"t-SNE be išskirčių ({n_2D_be} klasteriai, n={len(X_2D_be_isskirciu)})"],
-    "palyginimas_tsne_su_vs_be_isskirciu"
+    "palyginimas_tsne_su_vs_be_isskirciu",
+    df_list=[df_2D_su, df_2D_be]
 )
 
-print("Sukurtas grafikas: grafikai/hierarchinis/palyginimas_tsne_su_vs_be_isskirciu.png")
 
+print("Sukurtas grafikas: grafikai/hierarchinis/palyginimas_tsne_su_vs_be_isskirciu.png")
 
 # Dimensijų mažinimo įtaka
 vizualizuoti_klasterius_sujungta(
@@ -334,7 +423,8 @@ vizualizuoti_klasterius_sujungta(
     [klasteriai_atrinkta_rekom, klasteriai_2D_rekom],
     [f"Originalūs duomenys ({n_rekom_atrinkta} klasteriai)",
      f"t-SNE duomenys ({n_rekom_2D} klasteriai)"],
-    "palyginimas_dimensiju_mazinimas"
+    "palyginimas_dimensiju_mazinimas",
+    df_list=[df_atrinkta, df_2D]
 )
 
 print("\nSukurtas grafikas: dimensijų mažinimo įtaka (originalūs vs t-SNE duomenys)")
