@@ -10,7 +10,7 @@ from sklearn.metrics import silhouette_score
 from sklearn.manifold import TSNE
 from sklearn.mixture import GaussianMixture
 
-PRINT_CLUSTER_STATS = False
+PRINT_CLUSTER_STATS = True
 PERPLEXITY = 50
 TSNE_METRIC = 'canberra'
 RANDOM_STATE = 42
