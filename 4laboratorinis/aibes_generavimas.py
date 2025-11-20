@@ -11,8 +11,9 @@ METRIC = 'canberra'
 RANDOM_STATE = 42
 
 DUOMENU_DIREKTORIJA = 'duomenys'
-DUOMENU_FAILAS = 'sugeneruota_aibe.csv'
-DUOMENU_FAILAS_2D = 'sugeneruota_aibe_2D.csv'
+DUOMENU_FAILAS_BASIC = 'sugeneruota_aibe_nenormuota.csv'
+DUOMENU_FAILAS_NORMUOTA = 'sugeneruota_aibe_normuota.csv'
+DUOMENU_FAILAS_2D_NORMUOTA = 'sugeneruota_aibe_2D_normuota.csv'
 
 GRAFIKU_DIREKTORIJA = 'grafikai'
 TSNE_DIREKTORIJA = 'TSNE'
@@ -65,8 +66,9 @@ tsne_df['label'] = Y
 
 # Paskutinis žingsnis – viską išsaugoti.
 os.makedirs(DUOMENU_DIREKTORIJA, exist_ok=True)
-df_normuota.to_csv(os.path.join(DUOMENU_DIREKTORIJA, DUOMENU_FAILAS), index=False, sep=';')
-tsne_df.to_csv(os.path.join(DUOMENU_DIREKTORIJA, DUOMENU_FAILAS_2D), index=False, sep=';')
+df_sugeneruota.to_csv(os.path.join(DUOMENU_DIREKTORIJA, DUOMENU_FAILAS_BASIC), index=False, sep=';')
+df_normuota.to_csv(os.path.join(DUOMENU_DIREKTORIJA, DUOMENU_FAILAS_NORMUOTA), index=False, sep=';')
+tsne_df.to_csv(os.path.join(DUOMENU_DIREKTORIJA, DUOMENU_FAILAS_2D_NORMUOTA), index=False, sep=';')
 
 os.makedirs(os.path.join(GRAFIKU_DIREKTORIJA, TSNE_DIREKTORIJA), exist_ok=True)
 
