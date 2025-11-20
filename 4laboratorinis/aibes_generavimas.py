@@ -2,6 +2,8 @@ import os
 import pandas as pd
 import numpy as np
 from sklearn.manifold import TSNE
+import matplotlib.pyplot as plt
+from matplotlib import cm
 
 PERPLEXITY = 50
 MAX_ITER = 500
@@ -13,7 +15,7 @@ DUOMENU_FAILAS = 'sugeneruota_aibe.csv'
 DUOMENU_FAILAS_2D = 'sugeneruota_aibe_2D.csv'
 
 GRAFIKU_DIREKTORIJA = 'grafikai'
-TSNE_DIREKTORIJA = 'TSNE',
+TSNE_DIREKTORIJA = 'TSNE'
 TSNE_GRAFIKA = '2D'
 
 df = pd.read_csv('../EKG_pupsniu_analize.csv', sep=';')
@@ -65,3 +67,30 @@ tsne_df['label'] = Y
 os.makedirs(DUOMENU_DIREKTORIJA, exist_ok=True)
 df_normuota.to_csv(os.path.join(DUOMENU_DIREKTORIJA, DUOMENU_FAILAS), index=False, sep=';')
 tsne_df.to_csv(os.path.join(DUOMENU_DIREKTORIJA, DUOMENU_FAILAS_2D), index=False, sep=';')
+
+os.makedirs(os.path.join(GRAFIKU_DIREKTORIJA, TSNE_DIREKTORIJA), exist_ok=True)
+
+plt.figure(figsize=(10 ,8))
+klasiu_reiksmes = sorted(np.unique(Y))
+klasiu_label = [f"Klasė {int(reiksme)}" for reiksme in klasiu_reiksmes]
+spalvos = cm.viridis(np.linspace(0, 1, len(klasiu_reiksmes)))
+
+for reiksme, label, spalva in zip(klasiu_reiksmes, klasiu_label, spalvos):
+    mask = Y == reiksme
+    plt.scatter(
+        tsne_duomenys_normuota[mask, 0],
+        tsne_duomenys_normuota[mask, 1],
+        color=spalva,
+        label=label,
+        alpha=0.7
+    )
+
+naudojami_parametrai = f"Perplexity={PERPLEXITY}, max_iter={MAX_ITER}, metric={METRIC}, random_state={RANDOM_STATE}"
+plt.title(f't-SNE Dimensijos Mažinimas \n{naudojami_parametrai}')
+plt.xlabel('Dimensija 1')
+plt.ylabel('Dimensija 2')
+plt.legend(title='Klasės')
+plt.tight_layout()
+grafiko_kelias = os.path.join(GRAFIKU_DIREKTORIJA, TSNE_DIREKTORIJA, TSNE_GRAFIKA)
+plt.savefig(grafiko_kelias, dpi=300)
+plt.close()
