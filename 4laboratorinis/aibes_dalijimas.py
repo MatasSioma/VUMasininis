@@ -97,7 +97,7 @@ def nupiesti_viena(tsne_df, pavadinimas, failas):
 
 def nupiesti_bendra(tsne_mok, tsne_val, tsne_test):
     """Sukuria vieną bendrą PNG su legendomis visuose grafikuose."""
-    fig, axes = plt.subplots(1, 3, figsize=(20, 6))
+    _, axes = plt.subplots(1, 3, figsize=(20, 6))
 
     duomenys = [
         (tsne_mok,  "Mokymo aibė",     axes[0]),
