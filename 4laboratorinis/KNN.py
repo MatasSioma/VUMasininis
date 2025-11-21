@@ -74,11 +74,6 @@ DUOMENU_DIREKTORIJA = 'duomenys'
 GRAFIKU_DIREKTORIJA = 'grafikai'
 KNN_DIREKTORIJA = 'KNN'
 
-# k-NN hiperparametrai
-K_NEIGHBORS = 5  # Kiek kaimynų naudoti
-METRIC = 'euclidean'  # Atstumo metrika
-WEIGHTS = 'uniform'  # Kaip svertis kaimynų balsus
-
 # Sukuriame grafikai/KNN direktoriją
 os.makedirs(os.path.join(GRAFIKU_DIREKTORIJA, KNN_DIREKTORIJA), exist_ok=True)
 
@@ -87,18 +82,37 @@ print("=" * 70)
 print("1. DUOMENŲ ĮKĖLIMAS")
 print("=" * 70)
 
-df_mokymas = pd.read_csv(
-    os.path.join(DUOMENU_DIREKTORIJA, 'mokymo_aibe.csv'),
-    sep=';'
-)
-df_validavimas = pd.read_csv(
-    os.path.join(DUOMENU_DIREKTORIJA, 'validavimo_aibe.csv'),
-    sep=';'
-)
-df_testavimas = pd.read_csv(
-    os.path.join(DUOMENU_DIREKTORIJA, 'testavimo_aibe.csv'),
-    sep=';'
-)
+try:
+    df_mokymas = pd.read_csv(
+        os.path.join(DUOMENU_DIREKTORIJA, 'mokymo_aibe.csv'),
+        sep=';'
+    )
+    df_validavimas = pd.read_csv(
+        os.path.join(DUOMENU_DIREKTORIJA, 'validavimo_aibe.csv'),
+        sep=';'
+    )
+    df_testavimas = pd.read_csv(
+        os.path.join(DUOMENU_DIREKTORIJA, 'testavimo_aibe.csv'),
+        sep=';'
+    )
+except FileNotFoundError:
+    # Fallback if running from parent directory
+    DUOMENU_DIREKTORIJA = '4laboratorinis/duomenys'
+    GRAFIKU_DIREKTORIJA = '4laboratorinis/grafikai'
+    os.makedirs(os.path.join(GRAFIKU_DIREKTORIJA, KNN_DIREKTORIJA), exist_ok=True)
+    
+    df_mokymas = pd.read_csv(
+        os.path.join(DUOMENU_DIREKTORIJA, 'mokymo_aibe.csv'),
+        sep=';'
+    )
+    df_validavimas = pd.read_csv(
+        os.path.join(DUOMENU_DIREKTORIJA, 'validavimo_aibe.csv'),
+        sep=';'
+    )
+    df_testavimas = pd.read_csv(
+        os.path.join(DUOMENU_DIREKTORIJA, 'testavimo_aibe.csv'),
+        sep=';'
+    )
 
 # Atskiriam požymius (X) ir klases (y)
 X_mokymas = df_mokymas.drop(columns='label').values
@@ -114,36 +128,72 @@ print(f"Mokymo aibė: {X_mokymas.shape[0]} įrašų, {X_mokymas.shape[1]} požym
 print(f"Validavimo aibė: {X_validavimas.shape[0]} įrašų")
 print(f"Testavimo aibė: {X_testavimas.shape[0]} įrašų")
 
-# 2. Sukuriame ir apmokom k-NN modelį
+# 2. Hiperparametrų parinkimas (Tuning)
 print("\n" + "=" * 70)
-print("2. MODELIO MOKYMAS")
+print("2. HIPERPARAMETRŲ PARINKIMAS (VALIDAVIMAS)")
 print("=" * 70)
 
-knn = KNeighborsClassifier(
-    n_neighbors=K_NEIGHBORS,
-    metric=METRIC,
-    weights=WEIGHTS
-)
+k_values = range(1, 22, 2)  # 1, 3, 5, ..., 21
+results = []
 
-print(f"Algoritmas: k-Nearest Neighbors (k-NN)")
-print(f"Parametrai:")
-print(f"  - n_neighbors (k): {K_NEIGHBORS}")
-print(f"  - metric: {METRIC}")
-print(f"  - weights: {WEIGHTS}")
-print(f"\nMokymas...")
+print(f"{'k':<5} | {'Accuracy':<10} | {'F1 Score':<10}")
+print("-" * 30)
 
-knn.fit(X_mokymas, y_mokymas)
-print("✓ Modelis apmokytas!")
+best_k = -1
+best_f1 = -1
 
-# 3. Prognozuojame ir vertiname
+for k in k_values:
+    knn = KNeighborsClassifier(n_neighbors=k, metric='euclidean', weights='uniform')
+    knn.fit(X_mokymas, y_mokymas)
+    
+    y_val_pred = knn.predict(X_validavimas)
+    
+    acc = accuracy_score(y_validavimas, y_val_pred)
+    f1 = f1_score(y_validavimas, y_val_pred, average='weighted')
+    
+    results.append({'k': k, 'accuracy': acc, 'f1': f1})
+    
+    print(f"{k:<5} | {acc:.4f}     | {f1:.4f}")
+    
+    if f1 > best_f1:
+        best_f1 = f1
+        best_k = k
+
+print("-" * 30)
+print(f"Geriausias k pagal F1 balą: {best_k} (F1={best_f1:.4f})")
+
+# Vizualizuojame parametru paiešką
+results_df = pd.DataFrame(results)
+plt.figure(figsize=(10, 6))
+plt.plot(results_df['k'], results_df['accuracy'], marker='o', label='Accuracy')
+plt.plot(results_df['k'], results_df['f1'], marker='s', label='F1 Score')
+plt.axvline(x=best_k, color='r', linestyle='--', label=f'Best k={best_k}')
+plt.xlabel('Kaimynų skaičius (k)')
+plt.ylabel('Metrikos reikšmė')
+plt.title('k-NN Hiperparametrų įtaka tikslumui (Validavimo aibė)')
+plt.legend()
+plt.grid(True)
+plt.xticks(k_values)
+plt.savefig(os.path.join(GRAFIKU_DIREKTORIJA, KNN_DIREKTORIJA, 'parameter_tuning.png'))
+plt.close()
+
+# 3. Galutinis modelio mokymas
 print("\n" + "=" * 70)
-print("3. MODELIO VERTINIMAS")
+print(f"3. GALUTINIO MODELIO MOKYMAS (k={best_k})")
+print("=" * 70)
+
+final_knn = KNeighborsClassifier(n_neighbors=best_k, metric='euclidean', weights='uniform')
+final_knn.fit(X_mokymas, y_mokymas)
+print("✓ Modelis apmokytas su optimaliais parametrais!")
+
+# 4. Prognozuojame ir vertiname
+print("\n" + "=" * 70)
+print("4. MODELIO VERTINIMAS (TESTAVIMO AIBĖ)")
 print("=" * 70)
 
 # Prognozės
-y_mokymas_pred = knn.predict(X_mokymas)
-y_validavimas_pred = knn.predict(X_validavimas)
-y_testavimas_pred = knn.predict(X_testavimas)
+y_mokymas_pred = final_knn.predict(X_mokymas)
+y_testavimas_pred = final_knn.predict(X_testavimas)
 
 # Metrikos
 def spausdinti_metrikos(y_tikros, y_prognozes, rinkinys_pavadinimas):
@@ -154,12 +204,11 @@ def spausdinti_metrikos(y_tikros, y_prognozes, rinkinys_pavadinimas):
     print(f"  F1 balas: {f1_score(y_tikros, y_prognozes, average='weighted'):.4f}")
 
 spausdinti_metrikos(y_mokymas, y_mokymas_pred, "MOKYMO AIBĖ")
-spausdinti_metrikos(y_validavimas, y_validavimas_pred, "VALIDAVIMO AIBĖ")
 spausdinti_metrikos(y_testavimas, y_testavimas_pred, "TESTAVIMO AIBĖ")
 
-# 4. Detalus klasifikacijos ataskaita testavimo aibei
+# 5. Detalus klasifikacijos ataskaita testavimo aibei
 print("\n" + "=" * 70)
-print("4. DETALI KLASIFIKACIJOS ATASKAITA (TESTAVIMO AIBĖ)")
+print("5. DETALI KLASIFIKACIJOS ATASKAITA")
 print("=" * 70)
 print(classification_report(
     y_testavimas,
@@ -167,9 +216,9 @@ print(classification_report(
     target_names=['Klasė 0', 'Klasė 2']
 ))
 
-# 5. Painiavos matrica (Confusion Matrix)
+# 6. Painiavos matrica (Confusion Matrix)
 print("\n" + "=" * 70)
-print("5. PAINIAVOS MATRICA")
+print("6. PAINIAVOS MATRICA")
 print("=" * 70)
 
 cm = confusion_matrix(y_testavimas, y_testavimas_pred)
@@ -178,7 +227,7 @@ print(cm)
 print(f"\nTeisingai klasifikuota: {cm[0,0] + cm[1,1]}")
 print(f"Klaidingai klasifikuota: {cm[0,1] + cm[1,0]}")
 
-# 6. Vizualizacija: Painiavos matrica
+# Vizualizacija: Painiavos matrica
 plt.figure(figsize=(8, 6))
 sns.heatmap(
     cm,
@@ -188,18 +237,37 @@ sns.heatmap(
     xticklabels=['Klasė 0', 'Klasė 2'],
     yticklabels=['Klasė 0', 'Klasė 2']
 )
-plt.title(f'Painiavos matrica (k-NN, k={K_NEIGHBORS})')
+plt.title(f'Painiavos matrica (k-NN, k={best_k})')
 plt.ylabel('Tikra klasė')
 plt.xlabel('Prognozuota klasė')
 plt.tight_layout()
 plt.savefig(
     os.path.join(GRAFIKU_DIREKTORIJA, KNN_DIREKTORIJA, 'confusion_matrix.png'),
-    dpi=3000
+    dpi=300
 )
 plt.close()
 
-# 7. Vizualizacija: Klasifikacijos rezultatai
-fig, axes = plt.subplots(1, 3, figsize=(18, 5))
+# 7. Klaidų analizė
+print("\n" + "=" * 70)
+print("7. KLAIDŲ ANALIZĖ")
+print("=" * 70)
+
+klaidos_maska = y_testavimas != y_testavimas_pred
+klaidingi_indeksai = np.where(klaidos_maska)[0]
+klaidingi_X = X_testavimas[klaidos_maska]
+klaidingi_y_tikri = y_testavimas[klaidos_maska]
+klaidingi_y_pred = y_testavimas_pred[klaidos_maska]
+
+print(f"Viso klaidų: {len(klaidingi_indeksai)}")
+if len(klaidingi_indeksai) > 0:
+    print("\nPirmieji 10 klaidingai klasifikuotų taškų:")
+    print(f"{'Indeksas':<10} | {'Tikra':<10} | {'Prognozė':<10} | {'Koordinatės'}")
+    print("-" * 60)
+    for i in range(min(10, len(klaidingi_indeksai))):
+        print(f"{klaidingi_indeksai[i]:<10} | {klaidingi_y_tikri[i]:<10} | {klaidingi_y_pred[i]:<10} | {klaidingi_X[i]}")
+
+# 8. Vizualizacija: Klasifikacijos rezultatai
+fig, axes = plt.subplots(1, 2, figsize=(14, 6))
 
 def nubraizti_rezultatus(ax, X, y_tikros, y_prognozes, pavadinimas):
     # Teisingai klasifikuoti
@@ -236,10 +304,9 @@ def nubraizti_rezultatus(ax, X, y_tikros, y_prognozes, pavadinimas):
     ax.grid(True, alpha=0.3)
 
 nubraizti_rezultatus(axes[0], X_mokymas, y_mokymas, y_mokymas_pred, 'Mokymo aibė')
-nubraizti_rezultatus(axes[1], X_validavimas, y_validavimas, y_validavimas_pred, 'Validavimo aibė')
-nubraizti_rezultatus(axes[2], X_testavimas, y_testavimas, y_testavimas_pred, 'Testavimo aibė')
+nubraizti_rezultatus(axes[1], X_testavimas, y_testavimas, y_testavimas_pred, 'Testavimo aibė')
 
-plt.suptitle(f'k-NN Klasifikacijos rezultatai (k={K_NEIGHBORS}, metric={METRIC})', fontsize=14, y=1.02)
+plt.suptitle(f'k-NN Klasifikacijos rezultatai (k={best_k})', fontsize=14, y=1.02)
 plt.tight_layout()
 plt.savefig(
     os.path.join(GRAFIKU_DIREKTORIJA, KNN_DIREKTORIJA, 'classification_results.png'),
