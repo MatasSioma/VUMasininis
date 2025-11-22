@@ -1,0 +1,54 @@
+{
+    "1_musu_pozymiai": [
+        "Q_val",
+        "R_val",
+        "S_val",
+        "RR_l_0/RR_l_1",
+        "signal_std",
+        "seq_size"
+    ],
+    "2_morfologinis_amplitudes": [
+        "P_val",
+        "Q_val",
+        "R_val",
+        "S_val",
+        "T_val"
+    ],
+    "3_laikinis_ritmas_raw": [
+        "RR_l_0",
+        "RR_r_0",
+        "RR_l_1",
+        "RR_r_1",
+        "RR_l_2",
+        "RR_r_2"
+    ],
+    "4_laikinis_ritmas_santykiai": [
+        "RR_l_0/RR_l_1",
+        "RR_l_1/RR_l_2",
+        "RR_r_0/RR_r_1",
+        "RR_r_1/RR_r_2"
+    ],
+    "5_statistinis_bendras": [
+        "signal_mean",
+        "signal_std",
+        "seq_size",
+        "wl_side",
+        "wr_side"
+    ],
+    "6_qrs_kompleksas_full": [
+        "Q_val",
+        "R_val",
+        "S_val",
+        "Q_pos",
+        "R_pos",
+        "S_pos"
+    ],
+    "7_hibridinis_optimalus": [
+        "RR_l_0",
+        "RR_r_0",
+        "R_val",
+        "S_val",
+        "signal_std",
+        "RR_l_0/RR_l_1"
+    ]
+}
