@@ -16,7 +16,10 @@ RANDOM_STATE = 42
 DUOMENU_DIREKTORIJA = 'duomenys'
 GRAFIKU_DIREKTORIJA = 'grafikai'
 KNN_PAGRINDINE_DIR = 'KNN_eksperimentai'
+JSON_DIREKTORIJA = 'JSON'
 JSON_FAILAS = 'pozymiu_rinkiniai.json'
+
+JSON_FAILAS_PATH = os.path.join(JSON_DIREKTORIJA, JSON_FAILAS)
 
 # Sukuriame pagrindinę direktoriją rezultatams
 BASE_OUTPUT_DIR = os.path.join(GRAFIKU_DIREKTORIJA, KNN_PAGRINDINE_DIR)
@@ -37,16 +40,16 @@ except FileNotFoundError:
 
 # ---------- 2. ĮKELIAME JSON KONFIGŪRACIJĄ ----------
 try:
-    with open(JSON_FAILAS, 'r', encoding='utf-8') as f:
+    with open(JSON_FAILAS_PATH, 'r', encoding='utf-8') as f:
         eksperimentai = json.load(f)
     print(f"✓ Rastas JSON failas. Įkelti {len(eksperimentai)} eksperimentų rinkiniai.")
 except FileNotFoundError:
-    print(f"KLAIDA: Nerastas '{JSON_FAILAS}'. Pirmiausia sugeneruokite jį.")
+    print(f"KLAIDA: Nerastas '{JSON_FAILAS_PATH}'. Pirmiausia sugeneruokite jį.")
     exit()
 
 # Kaupsime bendrus rezultatus ir ROC duomenis
 visu_eksperimentu_rezultatai = []
-roc_duomenys_bendrai = [] 
+roc_duomenys_bendrai = []
 
 # ---------- 3. CIKLAS PER VISUS EKSPERIMENTUS ----------
 
@@ -68,7 +71,7 @@ for eksp_pavadinimas, pozymiai in eksperimentai.items():
         X_test = df_testavimas[pozymiai].values
         y_test = df_testavimas['label'].values
     except KeyError as e:
-        print(f"  [!] KLAIDA: Požymis {e} nerastas. Praleidžiamas '{eksp_pavadinimas}'.")
+        print(f"KLAIDA: Požymis {e} nerastas. Praleidžiamas '{eksp_pavadinimas}'.")
         continue
 
     # 3.3. Hiperparametrų parinkimas
@@ -208,9 +211,9 @@ if roc_duomenys_bendrai:
     save_path = os.path.join(BASE_OUTPUT_DIR, 'roc_curves_combined.png')
     plt.savefig(save_path, dpi=300)
     plt.close()
-    print(f"✓ Bendras ROC grafikas išsaugotas: {save_path}")
+    print(f"Bendras ROC grafikas išsaugotas: {save_path}")
 else:
-    print("! Bendras ROC negeneruotas (trūksta duomenų).")
+    print("Bendras ROC negeneruotas (trūksta duomenų).")
 
 # ---------- 5. GERIAUSIŲ REZULTATŲ SUVESTINĖ (MODIFIKACIJA) ----------
 print("\n" + "=" * 80)
@@ -236,4 +239,4 @@ print(f"Didžiausias RECALL:     {row_rec['Eksperimentas']:<20} (Reikšmė: {row
 print(f"Didžiausias F1 SCORE:   {row_f1['Eksperimentas']:<20} (Reikšmė: {row_f1['F1 Score']:.4f})")
 
 print("-" * 80)
-print(f"✓ Visi rezultatai išsaugoti aplanke: {BASE_OUTPUT_DIR}")
+print(f"Visi rezultatai išsaugoti aplanke: {BASE_OUTPUT_DIR}")

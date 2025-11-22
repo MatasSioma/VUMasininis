@@ -16,7 +16,10 @@ RANDOM_STATE = 42
 DUOMENU_DIREKTORIJA = 'duomenys'
 GRAFIKU_DIREKTORIJA = 'grafikai'
 RF_PAGRINDINE_DIR = 'RF_eksperimentai'  # Pakeistas aplanko pavadinimas
+JSON_DIREKTORIJA = 'JSON'
 JSON_FAILAS = 'pozymiu_rinkiniai.json'
+
+JSON_FAILAS_PATH = os.path.join(JSON_DIREKTORIJA, JSON_FAILAS)
 
 # Sukuriame pagrindinę direktoriją rezultatams
 BASE_OUTPUT_DIR = os.path.join(GRAFIKU_DIREKTORIJA, RF_PAGRINDINE_DIR)
@@ -37,15 +40,15 @@ except FileNotFoundError:
 
 # ---------- 2. ĮKELIAME JSON KONFIGŪRACIJĄ ----------
 try:
-    with open(JSON_FAILAS, 'r', encoding='utf-8') as f:
+    with open(JSON_FAILAS_PATH, 'r', encoding='utf-8') as f:
         eksperimentai = json.load(f)
     print(f"✓ Rastas JSON failas. Įkelti {len(eksperimentai)} eksperimentų rinkiniai.")
 except FileNotFoundError:
-    print(f"KLAIDA: Nerastas '{JSON_FAILAS}'. Pirmiausia sugeneruokite jį.")
+    print(f"KLAIDA: Nerastas '{JSON_FAILAS_PATH}'. Pirmiausia sugeneruokite jį.")
     exit()
 
 visu_eksperimentu_rezultatai = []
-roc_duomenys_bendrai = [] 
+roc_duomenys_bendrai = []
 
 # ---------- 3. CIKLAS PER VISUS EKSPERIMENTUS ----------
 print("\nPRADEDAMAS CIKLAS PER EKSPERIMENTUS...")
@@ -69,7 +72,7 @@ for eksp_pavadinimas, pozymiai in eksperimentai.items():
     best_n = -1
     best_val_f1 = -1
     tuning_data = []
-    
+
     # Tikriname skirtingą medžių skaičių
     n_estimators_list = [10, 25, 50, 100, 200, 300]
 

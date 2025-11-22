@@ -1,4 +1,15 @@
 import json
+import os
+
+# ---------- KONSTANTOS ----------
+JSON_DIREKTORIJA = "JSON"
+JSON_FAILAS = "pozymiu_rinkiniai.json"
+
+# Sukuriame pilną kelią: JSON/pozymiu_rinkiniai.json
+FAILO_KELIAS = os.path.join(JSON_DIREKTORIJA, JSON_FAILAS)
+
+# Užtikriname, kad aplankas egzistuoja
+os.makedirs(JSON_DIREKTORIJA, exist_ok=True)
 
 eksperimentai = {
     "1_musu_pozymiai": [
@@ -39,10 +50,9 @@ eksperimentai = {
     ],
 }
 
-failo_pavadinimas = 'pozymiu_rinkiniai.json'
-
-with open(failo_pavadinimas, 'w', encoding='utf-8') as f:
+# Saugome į suformuotą kelią
+with open(FAILO_KELIAS, 'w', encoding='utf-8') as f:
     json.dump(eksperimentai, f, indent=4)
 
-print(f"✓ Failas '{failo_pavadinimas}' sėkmingai sukurtas.")
+print(f"Failas sėkmingai sukurtas: '{FAILO_KELIAS}'")
 print(f"Sukurti {len(eksperimentai)} skirtingi rinkiniai.")

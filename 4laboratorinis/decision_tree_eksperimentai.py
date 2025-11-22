@@ -16,7 +16,10 @@ RANDOM_STATE = 42
 DUOMENU_DIREKTORIJA = 'duomenys'
 GRAFIKU_DIREKTORIJA = 'grafikai'
 DT_PAGRINDINE_DIR = 'DT_eksperimentai' # Aplankas medžiams
+JSON_DIREKTORIJA = 'JSON'
 JSON_FAILAS = 'pozymiu_rinkiniai.json'
+
+JSON_FAILAS_PATH = os.path.join(JSON_DIREKTORIJA, JSON_FAILAS)
 
 # Sukuriame pagrindinę direktoriją rezultatams
 BASE_OUTPUT_DIR = os.path.join(GRAFIKU_DIREKTORIJA, DT_PAGRINDINE_DIR)
@@ -37,15 +40,15 @@ except FileNotFoundError:
 
 # ---------- 2. ĮKELIAME JSON KONFIGŪRACIJĄ ----------
 try:
-    with open(JSON_FAILAS, 'r', encoding='utf-8') as f:
+    with open(JSON_FAILAS_PATH, 'r', encoding='utf-8') as f:
         eksperimentai = json.load(f)
-    print(f"✓ Rastas JSON failas. Įkelti {len(eksperimentai)} eksperimentų rinkiniai.")
+    print(f"Rastas JSON failas. Įkelti {len(eksperimentai)} eksperimentų rinkiniai.")
 except FileNotFoundError:
-    print(f"KLAIDA: Nerastas '{JSON_FAILAS}'.")
+    print(f"KLAIDA: Nerastas '{JSON_FAILAS_PATH}'.")
     exit()
 
 visu_eksperimentu_rezultatai = []
-roc_duomenys_bendrai = [] 
+roc_duomenys_bendrai = []
 
 # ---------- 3. CIKLAS PER VISUS EKSPERIMENTUS ----------
 print("\nPRADEDAMAS CIKLAS PER EKSPERIMENTUS...")
@@ -183,4 +186,4 @@ if roc_duomenys_bendrai:
     plt.savefig(os.path.join(BASE_OUTPUT_DIR, 'roc_curves_combined.png'), dpi=300)
     plt.close()
 
-print(f"\n✓ Visi DT rezultatai išsaugoti: {BASE_OUTPUT_DIR}")
+print(f"\nVisi DT rezultatai išsaugoti: {BASE_OUTPUT_DIR}")
