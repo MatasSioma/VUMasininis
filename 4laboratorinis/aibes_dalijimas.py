@@ -57,16 +57,30 @@ X_mok, X_val, y_mok, y_val, tsne_mok, tsne_val = train_test_split(
     test_size=0.2, random_state=RANDOM_STATE, stratify=y_mok_val
 )
 
-# ---------- 5. IŠSAUGOME 31D AIBES ----------
+# ---------- 5. IŠSAUGOME 31D IR 2D AIBES ----------
+
+# 31D duomenys
 df_mok = pd.concat([X_mok, y_mok], axis=1)
 df_val = pd.concat([X_val, y_val], axis=1)
 df_test = pd.concat([X_test, y_test], axis=1)
 
+# 2D t-SNE duomenys
+df_mok_2D = tsne_mok.reset_index(drop=True)
+df_val_2D = tsne_val.reset_index(drop=True)
+df_test_2D = tsne_test.reset_index(drop=True)
+
+# Išsaugome 31D failus
 df_mok.to_csv(os.path.join(DUOMENU_DIREKTORIJA, 'mokymo_aibe.csv'), sep=';', index=False)
 df_val.to_csv(os.path.join(DUOMENU_DIREKTORIJA, 'validavimo_aibe.csv'), sep=';', index=False)
 df_test.to_csv(os.path.join(DUOMENU_DIREKTORIJA, 'testavimo_aibe.csv'), sep=';', index=False)
 
-print("✓ Išsaugotos 31D mok/val/test aibės")
+# Išsaugome 2D failus
+df_mok_2D.to_csv(os.path.join(DUOMENU_DIREKTORIJA, 'mokymo_aibe_2D.csv'), sep=';', index=False)
+df_val_2D.to_csv(os.path.join(DUOMENU_DIREKTORIJA, 'validavimo_aibe_2D.csv'), sep=';', index=False)
+df_test_2D.to_csv(os.path.join(DUOMENU_DIREKTORIJA, 'testavimo_aibe_2D.csv'), sep=';', index=False)
+
+print("✓ Išsaugotos 31D ir 2D mok/val/test aibės")
+
 
 # ---------- 6. VIZUALIZUOJAME 2D MOK/VAL/TEST AIBES ----------
 def nupiesti_viena(tsne_df, pavadinimas, failas):
