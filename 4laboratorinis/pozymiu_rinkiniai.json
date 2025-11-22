@@ -50,5 +50,17 @@
         "S_val",
         "signal_std",
         "RR_l_0/RR_l_1"
+    ],
+    "8_pqrst_kompleksas_full": [
+        "P_val",
+        "Q_val",
+        "R_val",
+        "S_val",
+        "T_val",
+        "P_pos",
+        "Q_pos",
+        "R_pos",
+        "S_pos",
+        "T_pos"
     ]
 }
