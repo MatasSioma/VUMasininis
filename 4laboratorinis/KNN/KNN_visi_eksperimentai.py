@@ -13,10 +13,10 @@ from sklearn.metrics import (
 
 # ---------- KONSTANTOS ----------
 RANDOM_STATE = 42
-DUOMENU_DIREKTORIJA = 'duomenys'
-GRAFIKU_DIREKTORIJA = 'grafikai'
+DUOMENU_DIREKTORIJA = '../duomenys'
+GRAFIKU_DIREKTORIJA = '../grafikai'
 KNN_PAGRINDINE_DIR = 'KNN_eksperimentai'
-JSON_DIREKTORIJA = 'JSON'
+JSON_DIREKTORIJA = '../JSON'
 JSON_FAILAS = 'pozymiu_rinkiniai.json'
 
 JSON_FAILAS_PATH = os.path.join(JSON_DIREKTORIJA, JSON_FAILAS)

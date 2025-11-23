@@ -12,10 +12,11 @@ from sklearn.metrics import (
 )
 
 # ---------- KONSTANTOS IR NUSTATYMAI ----------
-DUOMENU_DIREKTORIJA = 'duomenys'
-GRAFIKU_DIREKTORIJA = 'grafikai'
+DUOMENU_DIREKTORIJA = '../duomenys'
+GRAFIKU_DIREKTORIJA = '../grafikai'
 KNN_DIREKTORIJA = 'KNN'
-JSON_FAILAS = os.path.join('JSON', 'geriausias_rinkinys.json')
+JSON_DIREKTORIJA = '../JSON'
+JSON_FAILAS = os.path.join(JSON_DIREKTORIJA, 'geriausias_rinkinys.json')
 
 # Sukuriame reikiamas direktorijas
 os.makedirs(os.path.join(GRAFIKU_DIREKTORIJA, KNN_DIREKTORIJA), exist_ok=True)
@@ -56,7 +57,14 @@ experiments = {
     "Optimalūs požymiai": pozymiai_subset
 }
 
+# Čia nurodome fiksuotus k parametrus specifinėms aibėms
+FIXED_K_PARAMS = {
+    "Optimalūs požymiai": 3  # <-- ČIA PAKEITIMAS: Fiksuojame k=3 šiai aibei
+}
+
+# Sąrašai duomenų kaupimui
 roc_data_storage = []
+cm_data_storage = [] 
 summary_results = []
 visu_eksperimentu_duomenys = []
 
@@ -71,10 +79,13 @@ for exp_name, features in experiments.items():
     X_test = df_testavimas[features].values
 
     print(f"--- Ieskomas geriausias k (Validavimo aibe) ---")
-    best_k = 1
+    
+    # Kintamieji geriausio paieškai (automatiniai)
+    auto_best_k = 1
     best_val_f1 = -1
     tuning_data_table = []
 
+    # Ciklas vykdomas visada, kad užpildytume duomenis grafikams (Section 5)
     for k in range(1, 22, 2):
         knn_temp = KNeighborsClassifier(n_neighbors=k, metric='euclidean', weights='uniform')
         knn_temp.fit(X_mok, y_mokymas)
@@ -99,19 +110,28 @@ for exp_name, features in experiments.items():
 
         if f1_val > best_val_f1:
             best_val_f1 = f1_val
-            best_k = k
+            auto_best_k = k
 
     print(f"\nParametru paieskos rezultatai ({exp_name}):")
     headers = ["k", "Accuracy", "Precision", "Recall", "F1 Score"]
     print(tabulate(tuning_data_table, headers=headers, tablefmt="psql", floatfmt=".4f"))
-    print(f"\n[BEST] Pasirinktas k: {best_k} (Maksimalus F1={best_val_f1:.4f})")
 
-    # Final training
+    # --- SPRENDIMAS DĖL GERIAUSIO K ---
+    if exp_name in FIXED_K_PARAMS:
+        best_k = FIXED_K_PARAMS[exp_name]
+        print(f"\n[INFO] Rastas automatinis k={auto_best_k}, BET naudojamas FIKSUOTAS k={best_k} (pagal nustatymus).")
+    else:
+        best_k = auto_best_k
+        print(f"\n[BEST] Automatiškai pasirinktas k: {best_k} (Maksimalus F1={best_val_f1:.4f})")
+
+    # -----------------------------------------------------------
+    # GALUTINIS TESTAVIMAS SU TESTAVIMO AIBE
+    # -----------------------------------------------------------
     final_knn = KNeighborsClassifier(n_neighbors=best_k, metric='euclidean', weights='uniform')
     final_knn.fit(X_mok, y_mokymas)
     y_test_pred = final_knn.predict(X_test)
 
-    # Metrics
+    # Metrikos
     acc = accuracy_score(y_testavimas, y_test_pred)
     prec = precision_score(y_testavimas, y_test_pred, average='weighted', zero_division=0)
     rec = recall_score(y_testavimas, y_test_pred, average='weighted', zero_division=0)
@@ -126,16 +146,20 @@ for exp_name, features in experiments.items():
         'F1 Score': f1_final
     })
 
-    # Confusion Matrix
+    # --- SVARBU: Išvedame detalią ataskaitą (Classification Report) ---
+    print(f"\n>>> DETALI KLASIFIKAVIMO ATASKAITA: {exp_name} (k={best_k}) <<<")
+    print(classification_report(y_testavimas, y_test_pred, target_names=["Normalus (0)", "Aritmija (2)"], digits=4))
+
+    # --- SVARBU: Sumaišymo matricos skaičiai tekstui ---
     cm = confusion_matrix(y_testavimas, y_test_pred)
-    plt.figure(figsize=(6, 5))
-    sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', cbar=False)
-    plt.title(f'Sumaišymo matrica: {exp_name}\n(k={best_k}, F1={f1_final:.4f})')
-    plt.ylabel('Tikroji klase')
-    plt.xlabel('Prognozuota klase')
-    plt.tight_layout()
-    plt.savefig(os.path.join(GRAFIKU_DIREKTORIJA, KNN_DIREKTORIJA, f'{exp_name}_Confusion_Matrix.png'), dpi=300)
-    plt.close()
+    tn, fp, fn, tp = cm.ravel()
+    print(f">>> KLAIDŲ ANALIZĖ: TN={tn} (Tikrai sveiki), FP={fp} (Klaidingi aliarmai), FN={fn} (Praleista liga), TP={tp} (Rasta liga)")
+    print("-" * 60)
+
+    cm_data_storage.append({
+        'cm': cm,
+        'title': f'{exp_name}\nk={best_k}'
+    })
 
     # ROC Data
     if hasattr(final_knn, "predict_proba"):
@@ -144,7 +168,11 @@ for exp_name, features in experiments.items():
         roc_auc = auc(fpr, tpr)
         roc_data_storage.append({'name': exp_name, 'fpr': fpr, 'tpr': tpr, 'auc': roc_auc})
 
-# ---------- 4. ROC GRAFIKAS ----------
+# ---------- 4. BENDRŲ GRAFIKŲ GENERAVIMAS (ROC ir CM) ----------
+print("\n" + "=" * 100)
+print(" 4. GENERUOJAMI BENDRI GRAFIKAI (ROC IR CM) ".center(100, "="))
+
+# --- 4.1 BENDRAS ROC GRAFIKAS ---
 plt.figure(figsize=(10, 8))
 colors = ['#1f77b4', '#ff7f0e']
 for i, data in enumerate(roc_data_storage):
@@ -156,10 +184,35 @@ plt.title('KNN ROC Kreivių Palyginimas')
 plt.legend(loc="lower right")
 plt.grid(True, alpha=0.3)
 plt.tight_layout()
-plt.savefig(os.path.join(GRAFIKU_DIREKTORIJA, KNN_DIREKTORIJA, 'BENDRAS_ROC_Grafikas.png'), dpi=300)
+roc_filename = os.path.join(GRAFIKU_DIREKTORIJA, KNN_DIREKTORIJA, 'BENDRAS_ROC_Grafikas.png')
+plt.savefig(roc_filename, dpi=300)
 plt.close()
+print(f"[OK] Sukurtas bendras ROC grafikas: {roc_filename}")
 
-# ---------- 5. K PRIKLAUSOMYBES GRAFIKAI (VIENAME FAILE 2x2) ----------
+# --- 4.2 BENDRAS SUMAIŠYMO MATRICŲ GRAFIKAS ---
+fig, axes = plt.subplots(1, 2, figsize=(12, 6))
+
+for i, data in enumerate(cm_data_storage):
+    ax = axes[i]
+    cm = data['cm']
+    title = data['title']
+
+    sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', cbar=False, ax=ax, annot_kws={"size": 14})
+    ax.set_title(title, fontsize=12, fontweight='bold')
+    ax.set_ylabel('Tikroji klasė', fontsize=10)
+    ax.set_xlabel('Prognozuota klasė', fontsize=10)
+    ax.set_xticklabels(['Normalus (0)', 'Aritmija (2)'])
+    ax.set_yticklabels(['Normalus (0)', 'Aritmija (2)'])
+
+plt.suptitle("KNN Sumaišymo Matricos Palyginimas", fontsize=16, y=1.02)
+plt.tight_layout()
+cm_filename = os.path.join(GRAFIKU_DIREKTORIJA, KNN_DIREKTORIJA, 'BENDRAS_Confusion_Matrix_Grid.png')
+plt.savefig(cm_filename, dpi=300, bbox_inches='tight')
+plt.close()
+print(f"[OK] Sukurtas bendras CM grafikas (grid): {cm_filename}")
+
+
+# ---------- 5. K PRIKLAUSOMYBES GRAFIKAI ----------
 print("\n" + "=" * 100)
 print(" 5. GENERUOJAMA METRIKU SUVESTINE (2x2 GRID) ".center(100, "="))
 
@@ -167,9 +220,8 @@ df_visos_metrikos = pd.DataFrame(visu_eksperimentu_duomenys)
 metrics_to_plot = ['Accuracy', 'Precision', 'Recall', 'F1 Score']
 custom_palette = {"Visi požymiai": "#1f77b4", "Optimalūs požymiai": "#ff7f0e"}
 
-# Sukuriame 2x2 paveiksla
 fig, axes = plt.subplots(2, 2, figsize=(16, 12))
-axes = axes.flatten() # Išlyginame masyvą, kad galėtume iteruoti cikle (0, 1, 2, 3)
+axes = axes.flatten()
 
 for i, metric in enumerate(metrics_to_plot):
     ax = axes[i]
@@ -185,8 +237,8 @@ for i, metric in enumerate(metrics_to_plot):
         palette=custom_palette,
         linewidth=2.5,
         markersize=8,
-        ax=ax,          # Nurodome konkretu sub-grafika
-        legend=(i == 0) # Legendą rodome tik pirmame grafike, kad neapkrautume vaizdo
+        ax=ax,
+        legend=(i == 0)
     )
 
     ax.set_title(f'{metric} priklausomybė nuo k', fontsize=12, fontweight='bold')
@@ -195,11 +247,9 @@ for i, metric in enumerate(metrics_to_plot):
     ax.set_xticks(range(1, 22, 2))
     ax.grid(True, linestyle='--', alpha=0.6)
 
-# Sutvarkome išdėstymą
 plt.suptitle("KNN Metrikų Priklausomybė nuo k Reikšmės (Mokymo procesas)", fontsize=16, y=1.02)
 plt.tight_layout()
 
-# Išsaugome vieną bendrą failą
 combined_filename = os.path.join(GRAFIKU_DIREKTORIJA, KNN_DIREKTORIJA, 'KNN_Metriku_Suvestine_Grid.png')
 plt.savefig(combined_filename, dpi=300, bbox_inches='tight')
 plt.close()
