@@ -57,9 +57,9 @@ experiments = {
     "Optimalūs požymiai": pozymiai_subset
 }
 
-# Čia nurodome fiksuotus k parametrus specifinėms aibėms
+# Čia nurodyti fiksuoti k parametrai specifinėms aibėms
 FIXED_K_PARAMS = {
-    "Optimalūs požymiai": 3  # <-- ČIA PAKEITIMAS: Fiksuojame k=3 šiai aibei
+    "Optimalūs požymiai": 3
 }
 
 # Sąrašai duomenų kaupimui
