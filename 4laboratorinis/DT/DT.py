@@ -81,7 +81,7 @@ for exp_name, features in experiments.items():
     best_val_f1 = -1
     tuning_data_table = []
 
-    for depth in range(1, 21):
+    for depth in range(1, 11):
         dt_temp = DecisionTreeClassifier(max_depth=depth, random_state=RANDOM_STATE)
         dt_temp.fit(X_mok, y_mokymas)
         y_val_pred = dt_temp.predict(X_val)
