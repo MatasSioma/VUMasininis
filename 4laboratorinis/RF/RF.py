@@ -86,7 +86,7 @@ except FileNotFoundError:
     pozymiai_subset = ["Q_val", "R_val", "S_val", "Q_pos", "R_pos", "S_pos"]
 
 experiments = {
-    "Vsi požymiai": pozymiai_full,
+    "Visi požymiai": pozymiai_full,
     "Optimalūs požymiai": pozymiai_subset
 }
 
@@ -126,11 +126,20 @@ for exp_name, features in experiments.items():
     n_estimators_list = [max(10, base_n - 100), base_n - 50, base_n, base_n + 50, base_n + 100]
     n_estimators_list = sorted(list(set(n_estimators_list)))  # Unique ir sorted
 
-    print(f"\n--- Validavimo su skirtingais n_estimators ---")
-    for n_est in n_estimators_list:
+    # -----------------------------------------------------------
+    print(f"\n--- Validavimo su skirtingais max_depth ---")
+    depth_tuning_table = []
+    best_depth_choice = optimal_params.get('max_depth', None)
+    best_val_f1_depth = -1
+
+    # keep n_estimators equal to optimal from params (no sweep)
+    best_n_est = optimal_params['n_estimators']
+
+    max_depth_values = list(range(4, 8))
+    for md in max_depth_values:
         rf_temp = RandomForestClassifier(
-            n_estimators=n_est,
-            max_depth=optimal_params['max_depth'],
+            n_estimators=best_n_est,
+            max_depth=md,
             min_samples_split=optimal_params['min_samples_split'],
             min_samples_leaf=optimal_params['min_samples_leaf'],
             max_features=optimal_params['max_features'],
@@ -145,35 +154,37 @@ for exp_name, features in experiments.items():
         rec_val = recall_score(y_validavimas, y_val_pred, average='weighted', zero_division=0)
         f1_val = f1_score(y_validavimas, y_val_pred, average='weighted', zero_division=0)
 
-        tuning_data_table.append([n_est, acc_val, prec_val, rec_val, f1_val])
+        depth_tuning_table.append([str(md) if md is not None else 'None', acc_val, prec_val, rec_val, f1_val])
 
-        # Kaupiame duomenis grafikams
+        # Kaupiame duomenis grafikams (include max_depth for compatibility)
         visu_eksperimentu_duomenys.append({
             'Dataset': exp_name,
-            'n_estimators': n_est,
+            'n_estimators': best_n_est,
+            'max_depth': md,
             'Accuracy': acc_val,
             'Precision': prec_val,
             'Recall': rec_val,
             'F1 Score': f1_val
         })
 
-        if f1_val > best_val_f1:
-            best_val_f1 = f1_val
-            auto_best_n = n_est
+        if f1_val > best_val_f1_depth:
+            best_val_f1_depth = f1_val
+            best_depth_choice = md
 
-    print(f"\nValidavimo rezultatai ({exp_name}):")
-    headers = ["n_estimators", "Accuracy", "Precision", "Recall", "F1 Score"]
-    print(tabulate(tuning_data_table, headers=headers, tablefmt="psql", floatfmt=".4f"))
+    print(f"\nValidavimo rezultatai (max_depth) ({exp_name}):")
+    headers_depth = ["max_depth", "Accuracy", "Precision", "Recall", "F1 Score"]
+    print(tabulate(depth_tuning_table, headers=headers_depth, tablefmt="psql", floatfmt=".4f"))
 
-    best_n_est = auto_best_n
-    print(f"\n[BEST] Optimalus n_estimators: {best_n_est} (Validavimo F1={best_val_f1:.4f})")
+    chosen_max_depth = best_depth_choice
+    depth_display = 'None' if chosen_max_depth is None else str(chosen_max_depth)
+    print(f"\n[BEST] Optimalus max_depth: {depth_display} (Validavimo F1={best_val_f1_depth:.4f})")
 
     # -----------------------------------------------------------
     # GALUTINIS TESTAVIMAS SU TESTAVIMO AIBE
     # -----------------------------------------------------------
     final_rf = RandomForestClassifier(
         n_estimators=best_n_est,
-        max_depth=optimal_params['max_depth'],
+        max_depth=chosen_max_depth,
         min_samples_split=optimal_params['min_samples_split'],
         min_samples_leaf=optimal_params['min_samples_leaf'],
         max_features=optimal_params['max_features'],
@@ -210,7 +221,7 @@ for exp_name, features in experiments.items():
 
     cm_data_storage.append({
         'cm': cm,
-        'title': f'{exp_name}\nn_estimators={best_n_est}'
+        'title': f'{exp_name}\nmax_depth={depth_display}'
     })
 
     # ROC Data
@@ -267,14 +278,14 @@ for i, data in enumerate(cm_data_storage):
     cm = data['cm']
     title = data['title']
 
-    sns.heatmap(cm, annot=True, fmt='d', cmap='Greens', cbar=False, ax=ax, annot_kws={"size": 14})
+    sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', cbar=False, ax=ax, annot_kws={"size": 14})
     ax.set_title(title, fontsize=12, fontweight='bold')
     ax.set_ylabel('Tikroji klasė', fontsize=10)
     ax.set_xlabel('Prognozuota klasė', fontsize=10)
     ax.set_xticklabels(['Normalus (0)', 'Aritmija (2)'])
     ax.set_yticklabels(['Normalus (0)', 'Aritmija (2)'])
 
-plt.suptitle("Random Forest Sumaišymo Matricos Palyginimas", fontsize=16, y=1.02)
+plt.suptitle("Atsitiktinio medžio Sumaišymo Matricos Palyginimas", fontsize=16, y=1.02)
 plt.tight_layout()
 cm_filename = os.path.join(GRAFIKU_DIREKTORIJA, RF_DIREKTORIJA, 'BENDRAS_Confusion_Matrix_Grid.png')
 plt.savefig(cm_filename, dpi=300, bbox_inches='tight')
@@ -282,13 +293,13 @@ plt.close()
 print(f"[OK] Sukurtas bendras CM grafikas (grid): {cm_filename}")
 
 
-# ---------- 5. N_ESTIMATORS PRIKLAUSOMYBES GRAFIKAI ----------
+# ---------- 5. max_depth PRIKLAUSOMYBĖS GRAFIKAI ----------
 print("\n" + "=" * 100)
-print(" 5. GENERUOJAMA METRIKU SUVESTINE (2x2 GRID) ".center(100, "="))
+print(" 5. GENERUOJAMA METRIKU SUVESTINE PRIKLAUSOMYBE NUO max_depth (2x2 GRID) ".center(100, "="))
 
 df_visos_metrikos = pd.DataFrame(visu_eksperimentu_duomenys)
 metrics_to_plot = ['Accuracy', 'Precision', 'Recall', 'F1 Score']
-custom_palette = {"Vsi požymiai": "#1f77b4", "Optimalūs požymiai": "#ff7f0e"}
+custom_palette = {"Visi požymiai": "#1f77b4", "Optimalūs požymiai": "#ff7f0e"}
 
 fig, axes = plt.subplots(2, 2, figsize=(16, 12))
 axes = axes.flatten()
@@ -298,7 +309,7 @@ for i, metric in enumerate(metrics_to_plot):
 
     sns.lineplot(
         data=df_visos_metrikos,
-        x='n_estimators',
+        x='max_depth',
         y=metric,
         hue='Dataset',
         style='Dataset',
@@ -311,12 +322,12 @@ for i, metric in enumerate(metrics_to_plot):
         legend=(i == 0)
     )
 
-    ax.set_title(f'{metric} priklausomybė nuo n_estimators', fontsize=12, fontweight='bold')
-    ax.set_xlabel('n_estimators (Medžių skaičius)', fontsize=10)
+    ax.set_title(f'{metric} priklausomybė nuo max_depth', fontsize=12, fontweight='bold')
+    ax.set_xlabel('max_depth', fontsize=10)
     ax.set_ylabel(metric, fontsize=10)
     ax.grid(True, linestyle='--', alpha=0.6)
 
-plt.suptitle("Random Forest Metrikų Priklausomybė nuo n_estimators Reikšmės (Mokymo procesas)", fontsize=16, y=1.02)
+plt.suptitle("Atsitiktinio medžio Metrikų Priklausomybė nuo max_depth Reikšmės (Mokymo procesas)", fontsize=16, y=1.02)
 plt.tight_layout()
 
 combined_filename = os.path.join(GRAFIKU_DIREKTORIJA, RF_DIREKTORIJA, 'RF_Metriku_Suvestine_Grid.png')

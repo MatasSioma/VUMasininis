@@ -82,10 +82,10 @@ for exp_name, features in experiments.items():
     print(f"\nVykdoma grieta parametru paieska...")
 
     param_grid = {
-        'n_estimators': [50, 100, 150, 200, 250, 300],
-        'max_depth': [10, 15, 20, 25, None],
-        'min_samples_split': [2, 5, 10],
-        'min_samples_leaf': [1, 2, 4],
+        'n_estimators': [100, 125, 150, 225, 250],
+        'max_depth': [6, 7, 8],
+        'min_samples_split': [6,7,8,9,10],
+        'min_samples_leaf': [1, 2, 3],
         'max_features': ['sqrt', 'log2'],
     }
 
@@ -97,7 +97,7 @@ for exp_name, features in experiments.items():
         param_grid,
         cv=5,  # 5-fold cross-validation
         scoring='f1_weighted',
-        n_jobs=4,  # Parallelizes the grid search itself
+        n_jobs=8,  # Parallelizes the grid search itself
         verbose=1
     )
 
