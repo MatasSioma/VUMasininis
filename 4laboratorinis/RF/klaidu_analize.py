@@ -6,7 +6,6 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.ensemble import RandomForestClassifier
 
-# ---------- NUSTATYMAI ----------
 DUOMENU_DIREKTORIJA = '../duomenys'
 GRAFIKU_DIREKTORIJA = '../grafikai'
 RF_DIREKTORIJA = 'RF'
@@ -17,11 +16,9 @@ KLAIDU_DIREKTORIJA = os.path.join(GRAFIKU_DIREKTORIJA, RF_DIREKTORIJA, 'Klaidos'
 
 os.makedirs(KLAIDU_DIREKTORIJA, exist_ok=True)
 
-# ---------- 0. OPTIMALIŲ PARAMETRŲ NUSKAITYMAS IŠ JSON ----------
 print("=" * 50)
 
 def load_optimal_params(exp_name):
-    """Bandoma ikelti optimizuotus parametrus iš JSON. Jei nėra, naudoja defaults."""
     try:
         with open(OPTIMAL_PARAMS_JSON, 'r', encoding='utf-8') as f:
             params_dict = json.load(f)
@@ -36,7 +33,6 @@ def load_optimal_params(exp_name):
     except FileNotFoundError:
         pass
 
-    # Numatytieji parametrai
     return {
         'n_estimators': 200,
         'max_depth': 10,
@@ -55,7 +51,6 @@ print(f"  max_features: {optimal_params['max_features']}")
 
 print("=" * 50)
 
-# ---------- 1. DUOMENŲ ĮKELIMAS ----------
 print("Įkeliami duomenys...")
 try:
     df_mokymas = pd.read_csv(os.path.join(DUOMENU_DIREKTORIJA, 'mokymo_aibe.csv'), sep=';')
@@ -64,7 +59,6 @@ except FileNotFoundError:
     print(f"[KLAIDA] Nerasti duomenų failai aplanke: {DUOMENU_DIREKTORIJA}")
     exit()
 
-# Naudojame visus požymius (full dataset)
 visi_pozymiai = [col for col in df_mokymas.columns if col != 'label']
 
 # Paruošiame X ir y
@@ -77,7 +71,7 @@ y_test = df_testavimas['label'].values
 print(f"Mokymo aibė: {X_train.shape[0]} eilučių, {len(visi_pozymiai)} požymiai")
 print(f"Testavimo aibė: {X_test.shape[0]} eilučių")
 
-# ---------- 2. MODELIO APMOKYMAS ----------
+
 print(f"\nApmokomas Atsitiktinis medis su visais parametrais...")
 rf = RandomForestClassifier(
     n_estimators=optimal_params['n_estimators'],
@@ -91,7 +85,7 @@ rf = RandomForestClassifier(
 rf.fit(X_train, y_train)
 y_pred = rf.predict(X_test)
 
-# ---------- 3. KLAIDŲ PAIEŠKA ----------
+
 klaidu_indeksai = np.where(y_test != y_pred)[0]
 print(f"Rasta klaidų: {len(klaidu_indeksai)} iš {len(y_test)}")
 
@@ -99,10 +93,10 @@ if len(klaidu_indeksai) == 0:
     print("Klaidų nerasta. Nėra ką vizualizuoti.")
     exit()
 
-# Paskaičiuojame klasių vidurkius (kad turėtume su kuo lyginti)
+
 vidurkiai = df_testavimas.groupby('label')[visi_pozymiai].mean()
 
-# ---------- 4. VIZUALIZACIJA KIEKVIENAI KLAIDAI ----------
+
 klasiu_pavadinimai = {0: "Normalus (0)", 2: "Aritmija (2)"}
 
 for i, idx in enumerate(klaidu_indeksai):
@@ -113,36 +107,32 @@ for i, idx in enumerate(klaidu_indeksai):
     print(f"\n--- Klaida #{i+1} (Indeksas testavimo aibėje: {idx}) ---")
     print(f"Tikroji klasė: {klasiu_pavadinimai[tikra_klase]}")
     print(f"Prognozuota:   {klasiu_pavadinimai[prognozuota_klase]}")
-    
-    # Pasiruošiame duomenis grafikui
+
+
     reiksmes_objekto = objektas[visi_pozymiai].values
     reiksmes_tikros = vidurkiai.loc[tikra_klase].values
     reiksmes_prognozuotos = vidurkiai.loc[prognozuota_klase].values
-    
-    # Spausdiname parametrų reikšmes
+
+
     print(f"\nParametrų reikšmės (požymiai):")
     print(f"{'Požymis':<20} | {'Objekto':<10} | {klasiu_pavadinimai[tikra_klase]:<20} | {klasiu_pavadinimai[prognozuota_klase]:<20}")
     print("-" * 75)
     for j, pozymis in enumerate(visi_pozymiai):
         print(f"{pozymis:<20} | {reiksmes_objekto[j]:<10.4f} | {reiksmes_tikros[j]:<20.4f} | {reiksmes_prognozuotos[j]:<20.4f}")
-    
-    # Spausdiname klaidų analizę
+
     print(f"\nKlaidų analizė:")
     print(f"Skirtumas nuo tikrosios klasės vidurkio: {np.mean(np.abs(reiksmes_objekto - reiksmes_tikros)):.4f}")
     print(f"Skirtumas nuo prognozuotos klasės vidurkio: {np.mean(np.abs(reiksmes_objekto - reiksmes_prognozuotos)):.4f}")
 
-    # Pasiruošiame duomenis grafikui
     reiksmes_objekto = objektas[visi_pozymiai].values
     reiksmes_tikros = vidurkiai.loc[tikra_klase].values
     reiksmes_prognozuotos = vidurkiai.loc[prognozuota_klase].values
 
-    # Braižome grafiką
     x = np.arange(len(visi_pozymiai))
     width = 0.25
 
     fig, ax = plt.subplots(figsize=(14, 6))
 
-    # Stulpeliai
     rects1 = ax.bar(x - width, reiksmes_objekto, width, label='KLAIDINGAS OBJEKTAS', color='#d62728', alpha=0.9) # Raudona
     rects2 = ax.bar(x, reiksmes_tikros, width, label=f'Vidurkis: {klasiu_pavadinimai[tikra_klase]} (Tikras)', color='#2ca02c', alpha=0.7) # Žalia
     rects3 = ax.bar(x + width, reiksmes_prognozuotos, width, label=f'Vidurkis: {klasiu_pavadinimai[prognozuota_klase]} (Spėtas)', color='#7f7f7f', alpha=0.5) # Pilka

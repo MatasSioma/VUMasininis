@@ -4,7 +4,7 @@ import numpy as np
 import json
 import warnings
 import matplotlib
-matplotlib.use('Agg')  # Use non-interactive backend
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import seaborn as sns
 from tabulate import tabulate
@@ -14,10 +14,8 @@ from sklearn.metrics import (
     confusion_matrix, classification_report, roc_curve, auc
 )
 
-# Suppress warnings
 warnings.filterwarnings('ignore', category=UserWarning)
 
-# ---------- KONSTANTOS IR NUSTATYMAI ----------
 DUOMENU_DIREKTORIJA = '../duomenys'
 GRAFIKU_DIREKTORIJA = '../grafikai'
 RF_DIREKTORIJA = 'RF'
@@ -25,18 +23,15 @@ JSON_DIREKTORIJA = '../JSON'
 JSON_FAILAS = os.path.join(JSON_DIREKTORIJA, 'geriausias_rinkinys.json')
 OPTIMAL_PARAMS_JSON = os.path.join(GRAFIKU_DIREKTORIJA, RF_DIREKTORIJA, 'RF_optimal_params.json')
 
-# Sukuriame reikiamas direktorijas
 os.makedirs(os.path.join(GRAFIKU_DIREKTORIJA, RF_DIREKTORIJA), exist_ok=True)
 
-# --- AUTOMATINIS PARAMETRU IKELIMAS IŠ TUNING REZULTATU ---
 def load_optimal_params(exp_name):
-    """Bandoma ikelti optimizuotus parametrus iš JSON. Jei nėra, naudoja defaults."""
     try:
         with open(OPTIMAL_PARAMS_JSON, 'r', encoding='utf-8') as f:
             params_dict = json.load(f)
             if exp_name in params_dict:
                 params = params_dict[exp_name].copy()
-                # Konvertuojame atgal tinkamus duomenų tipus
+
                 if params['max_depth'] == "None":
                     params['max_depth'] = None
                 else:
@@ -45,7 +40,6 @@ def load_optimal_params(exp_name):
     except FileNotFoundError:
         pass
 
-    # Numatytieji parametrai, jei tuning nebuvo atliktas
     return {
         'n_estimators': 200,
         'max_depth': 15,
@@ -54,7 +48,6 @@ def load_optimal_params(exp_name):
         'max_features': 'sqrt'
     }
 
-# ---------- 1. DUOMENU IKELIMAS ----------
 print("=" * 100)
 print(" 1. DUOMENU IKELIMAS IR PARUOSIMAS ".center(100, "="))
 
@@ -67,12 +60,10 @@ except FileNotFoundError:
     print(f"[KLAIDA] Nerasti duomenys aplanke '{DUOMENU_DIREKTORIJA}'.")
     exit()
 
-# Isskiriame Target kintamaji (klases)
 y_mokymas = df_mokymas['label'].values
 y_validavimas = df_validavimas['label'].values
 y_testavimas = df_testavimas['label'].values
 
-# ---------- 2. EKSPERIMENTU APIBREZIMAS ----------
 
 pozymiai_full = [col for col in df_mokymas.columns if col != 'label']
 
@@ -90,13 +81,11 @@ experiments = {
     "Optimalūs požymiai": pozymiai_subset
 }
 
-# Sąrašai duomenų kaupimui
 roc_data_storage = []
 cm_data_storage = []
 summary_results = []
 visu_eksperimentu_duomenys = []
 
-# ---------- 3. PAGRINDINIS CIKLAS ----------
 
 for exp_name, features in experiments.items():
     print("\n" + "#" * 100)
@@ -106,7 +95,6 @@ for exp_name, features in experiments.items():
     X_val = df_validavimas[features].values
     X_test = df_testavimas[features].values
 
-    # Ikelti optimalius parametrus
     optimal_params = load_optimal_params(exp_name)
 
     print(f"\n--- Naudojami parametrai ---")
@@ -116,23 +104,19 @@ for exp_name, features in experiments.items():
     print(f"  min_samples_leaf: {optimal_params['min_samples_leaf']}")
     print(f"  max_features: {optimal_params['max_features']}")
 
-    # Kintamieji geriausio paieškai
     auto_best_n = optimal_params['n_estimators']
     best_val_f1 = -1
     tuning_data_table = []
 
-    # Ciklas su didesniu diapazonu apie optimal n_estimators
     base_n = optimal_params['n_estimators']
     n_estimators_list = [max(10, base_n - 100), base_n - 50, base_n, base_n + 50, base_n + 100]
-    n_estimators_list = sorted(list(set(n_estimators_list)))  # Unique ir sorted
+    n_estimators_list = sorted(list(set(n_estimators_list)))
 
-    # -----------------------------------------------------------
     print(f"\n--- Validavimo su skirtingais max_depth ---")
     depth_tuning_table = []
     best_depth_choice = optimal_params.get('max_depth', None)
     best_val_f1_depth = -1
 
-    # keep n_estimators equal to optimal from params (no sweep)
     best_n_est = optimal_params['n_estimators']
 
     max_depth_values = list(range(4, 8))
@@ -156,7 +140,6 @@ for exp_name, features in experiments.items():
 
         depth_tuning_table.append([str(md) if md is not None else 'None', acc_val, prec_val, rec_val, f1_val])
 
-        # Kaupiame duomenis grafikams (include max_depth for compatibility)
         visu_eksperimentu_duomenys.append({
             'Dataset': exp_name,
             'n_estimators': best_n_est,
@@ -179,9 +162,6 @@ for exp_name, features in experiments.items():
     depth_display = 'None' if chosen_max_depth is None else str(chosen_max_depth)
     print(f"\n[BEST] Optimalus max_depth: {depth_display} (Validavimo F1={best_val_f1_depth:.4f})")
 
-    # -----------------------------------------------------------
-    # GALUTINIS TESTAVIMAS SU TESTAVIMO AIBE
-    # -----------------------------------------------------------
     final_rf = RandomForestClassifier(
         n_estimators=best_n_est,
         max_depth=chosen_max_depth,
@@ -209,11 +189,9 @@ for exp_name, features in experiments.items():
         'F1 Score': f1_final
     })
 
-    # --- SVARBU: Išvedame detalią ataskaitą (Classification Report) ---
     print(f"\n>>> DETALI KLASIFIKAVIMO ATASKAITA: {exp_name} (n_estimators={best_n_est}) <<<")
     print(classification_report(y_testavimas, y_test_pred, target_names=["Normalus (0)", "Aritmija (2)"], digits=4))
 
-    # --- SVARBU: Sumaišymo matricos skaičiai tekstui ---
     cm = confusion_matrix(y_testavimas, y_test_pred)
     tn, fp, fn, tp = cm.ravel()
     print(f">>> KLAIDŲ ANALIZĖ: TN={tn} (Tikrai sveiki), FP={fp} (Klaidingi aliarmai), FN={fn} (Praleista liga), TP={tp} (Rasta liga)")
@@ -231,7 +209,6 @@ for exp_name, features in experiments.items():
         roc_auc = auc(fpr, tpr)
         roc_data_storage.append({'name': exp_name, 'fpr': fpr, 'tpr': tpr, 'auc': roc_auc})
 
-    # --- FEATURE IMPORTANCE ---
     feature_importance = final_rf.feature_importances_
     feature_names = features
     importance_df = pd.DataFrame({
@@ -249,11 +226,9 @@ for exp_name, features in experiments.items():
     plt.close()
     print(f"[OK] Sukurtas feature importance grafikas: {importance_filename}")
 
-# ---------- 4. BENDRŲ GRAFIKŲ GENERAVIMAS (ROC ir CM) ----------
 print("\n" + "=" * 100)
 print(" 4. GENERUOJAMI BENDRI GRAFIKAI (ROC IR CM) ".center(100, "="))
 
-# --- 4.1 BENDRAS ROC GRAFIKAS ---
 plt.figure(figsize=(10, 8))
 colors = ['#1f77b4', '#ff7f0e']
 for i, data in enumerate(roc_data_storage):
@@ -270,7 +245,6 @@ plt.savefig(roc_filename, dpi=300)
 plt.close()
 print(f"[OK] Sukurtas bendras ROC grafikas: {roc_filename}")
 
-# --- 4.2 BENDRAS SUMAIŠYMO MATRICŲ GRAFIKAS ---
 fig, axes = plt.subplots(1, 2, figsize=(12, 6))
 
 for i, data in enumerate(cm_data_storage):
@@ -293,7 +267,6 @@ plt.close()
 print(f"[OK] Sukurtas bendras CM grafikas (grid): {cm_filename}")
 
 
-# ---------- 5. max_depth PRIKLAUSOMYBĖS GRAFIKAI ----------
 print("\n" + "=" * 100)
 print(" 5. GENERUOJAMA METRIKU SUVESTINE PRIKLAUSOMYBE NUO max_depth (2x2 GRID) ".center(100, "="))
 

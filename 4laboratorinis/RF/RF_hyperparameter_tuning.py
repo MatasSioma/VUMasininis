@@ -4,7 +4,7 @@ import numpy as np
 import json
 import warnings
 import matplotlib
-matplotlib.use('Agg')  # Use non-interactive backend to avoid tkinter errors
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import seaborn as sns
 from tabulate import tabulate
@@ -15,20 +15,16 @@ from sklearn.metrics import (
     confusion_matrix, classification_report, roc_curve, auc
 )
 
-# Suppress resource tracker warnings from joblib
 warnings.filterwarnings('ignore', category=UserWarning)
 
-# ---------- KONSTANTOS IR NUSTATYMAI ----------
 DUOMENU_DIREKTORIJA = '../duomenys'
 GRAFIKU_DIREKTORIJA = '../grafikai'
 RF_DIREKTORIJA = 'RF'
 JSON_DIREKTORIJA = '../JSON'
 JSON_FAILAS = os.path.join(JSON_DIREKTORIJA, 'geriausias_rinkinys.json')
 
-# Sukuriame reikiamas direktorijas
 os.makedirs(os.path.join(GRAFIKU_DIREKTORIJA, RF_DIREKTORIJA, 'hyperparameter_tuning'), exist_ok=True)
 
-# ---------- 1. DUOMENU IKELIMAS ----------
 print("=" * 100)
 print(" 1. DUOMENU IKELIMAS IR PARUOSIMAS ".center(100, "="))
 
@@ -41,12 +37,9 @@ except FileNotFoundError:
     print(f"[KLAIDA] Nerasti duomenys aplanke '{DUOMENU_DIREKTORIJA}'.")
     exit()
 
-# Isskiriame Target kintamaji (klases)
 y_mokymas = df_mokymas['label'].values
 y_validavimas = df_validavimas['label'].values
 y_testavimas = df_testavimas['label'].values
-
-# ---------- 2. EKSPERIMENTU APIBREZIMAS ----------
 
 pozymiai_full = [col for col in df_mokymas.columns if col != 'label']
 
@@ -64,11 +57,9 @@ experiments = {
     "Optimalūs požymiai": pozymiai_subset
 }
 
-# Sąrašai duomenų kaupimui
 best_params_storage = {}
 summary_results = []
 
-# ---------- 3. HYPERPARAMETRU PAIESKOS CIKLAS ----------
 
 for exp_name, features in experiments.items():
     print("\n" + "#" * 100)
@@ -78,7 +69,6 @@ for exp_name, features in experiments.items():
     X_val = df_validavimas[features].values
     X_test = df_testavimas[features].values
 
-    # --- GRIETA PAIESKA (GRID SEARCH) ---
     print(f"\nVykdoma grieta parametru paieska...")
 
     param_grid = {
@@ -89,15 +79,12 @@ for exp_name, features in experiments.items():
         'max_features': ['sqrt', 'log2'],
     }
 
-    # GridSearchCV su k-fold cross-validation
-    # Note: Using n_jobs=1 for RandomForestClassifier and n_jobs=4 for GridSearchCV
-    # This avoids threading issues on Windows while still getting good parallelization
     rf_grid = GridSearchCV(
         RandomForestClassifier(random_state=42, n_jobs=1),
         param_grid,
-        cv=5,  # 5-fold cross-validation
+        cv=5,
         scoring='f1_weighted',
-        n_jobs=8,  # Parallelizes the grid search itself
+        n_jobs=8,
         verbose=1
     )
 
@@ -115,17 +102,12 @@ for exp_name, features in experiments.items():
 
     best_params_storage[exp_name] = rf_grid.best_params_
 
-    # --- GridSearch rezultatų vizualizacija ---
     cv_results = pd.DataFrame(rf_grid.cv_results_)
 
-    # Išsaugome rezultatus
     results_csv = os.path.join(GRAFIKU_DIREKTORIJA, RF_DIREKTORIJA, 'hyperparameter_tuning', f'gridsearch_results_{exp_name.replace(" ", "_")}.csv')
     cv_results.to_csv(results_csv, index=False)
     print(f"[OK] GridSearch rezultatai išsaugoti: {results_csv}")
 
-    # -----------------------------------------------------------
-    # GALUTINIS TESTAVIMAS SU TESTAVIMO AIBE
-    # -----------------------------------------------------------
     final_rf = RandomForestClassifier(**rf_grid.best_params_, random_state=42, n_jobs=-1)
     final_rf.fit(X_mok, y_mokymas)
     y_test_pred = final_rf.predict(X_test)
@@ -145,17 +127,14 @@ for exp_name, features in experiments.items():
         'CV F1': rf_grid.best_score_
     })
 
-    # --- Išvedame detalią ataskaitą ---
     print(f"\n>>> DETALI KLASIFIKAVIMO ATASKAITA: {exp_name} <<<")
     print(classification_report(y_testavimas, y_test_pred, target_names=["Normalus (0)", "Aritmija (2)"], digits=4))
 
-    # --- Sumaišymo matrica ---
     cm = confusion_matrix(y_testavimas, y_test_pred)
     tn, fp, fn, tp = cm.ravel()
     print(f">>> KLAIDŲ ANALIZĖ: TN={tn}, FP={fp}, FN={fn}, TP={tp}")
     print("-" * 60)
 
-    # Sumaišymo matricos grafikas
     plt.figure(figsize=(8, 6))
     sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', cbar=True, annot_kws={"size": 14})
     plt.title(f'Confusion Matrix: {exp_name}\n(Accuracy: {acc:.4f})')
@@ -167,7 +146,6 @@ for exp_name, features in experiments.items():
     plt.close()
     print(f"[OK] CM grafikas: {cm_filename}")
 
-    # --- Feature Importance ---
     feature_importance = final_rf.feature_importances_
     feature_names = features
     importance_df = pd.DataFrame({
@@ -185,7 +163,6 @@ for exp_name, features in experiments.items():
     plt.close()
     print(f"[OK] Feature Importance: {importance_filename}")
 
-    # --- ROC Curve ---
     if hasattr(final_rf, "predict_proba"):
         y_proba = final_rf.predict_proba(X_test)[:, 1]
         fpr, tpr, _ = roc_curve(y_testavimas, y_proba, pos_label=2)
@@ -205,14 +182,12 @@ for exp_name, features in experiments.items():
         plt.close()
         print(f"[OK] ROC Curve: {roc_filename}")
 
-# ---------- 4. GALUTINE SUVESTINE ----------
 print("\n" + "=" * 100)
 print(" GALUTINIAI REZULTATAI ".center(100, "="))
 
 df_summary = pd.DataFrame(summary_results)
 print(tabulate(df_summary, headers='keys', tablefmt='psql', floatfmt=".4f", showindex=False))
 
-# --- Išsaugome optimalius parametrus JSON failuose ---
 output_params = {}
 for exp_name, params in best_params_storage.items():
     output_params[exp_name] = {
