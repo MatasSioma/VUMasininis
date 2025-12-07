@@ -7,7 +7,6 @@ import seaborn as sns
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.metrics import f1_score
 
-# ---------- NUSTATYMAI ----------
 DUOMENU_DIREKTORIJA = '../duomenys'
 GRAFIKU_DIREKTORIJA = '../grafikai'
 DT_DIREKTORIJA = 'DecisionTree'
@@ -18,13 +17,12 @@ DEPTH_RANGE = range(1, 21)
 
 os.makedirs(KLAIDU_DIREKTORIJA, exist_ok=True)
 
-# ---------- 0. POŽYMIŲ NUSKAITYMAS IŠ JSON ----------
 print("=" * 50)
 try:
     with open(JSON_FAILAS, 'r', encoding='utf-8') as f:
         config = json.load(f)
         OPTIMALUS_POZYMIAI = config.get("GERIAUSIAS_MODELIS_6_POZYMIAI", [])
-        
+
         if not OPTIMALUS_POZYMIAI:
             raise ValueError("Raktas nerastas arba sąrašas tuščias")
         print(f"[OK] Požymiai įkelti iš JSON ({len(OPTIMALUS_POZYMIAI)} vnt.):")
@@ -33,10 +31,9 @@ try:
 except (FileNotFoundError, ValueError) as e:
     print(f"[INFO] Nepavyko nuskaityti JSON ({e}). Naudojami numatytieji.")
     OPTIMALUS_POZYMIAI = ["Q_val", "R_val", "S_val", "Q_pos", "R_pos", "S_pos"]
-    
+
 print("=" * 50)
 
-# ---------- 1. DUOMENŲ ĮKĖLIMAS ----------
 print("Įkeliami duomenys...")
 try:
     df_mokymas = pd.read_csv(os.path.join(DUOMENU_DIREKTORIJA, 'mokymo_aibe.csv'), sep=';')
@@ -53,7 +50,6 @@ y_val = df_validavimas['label'].values
 X_test = df_testavimas[OPTIMALUS_POZYMIAI].values
 y_test = df_testavimas['label'].values
 
-# ---------- 2. GERIAUSIO GYLIO PAIEŠKA (VALIDAVIMO AIBĖ) ----------
 best_depth = None
 best_val_f1 = -1
 
@@ -71,7 +67,6 @@ dt = DecisionTreeClassifier(max_depth=best_depth, random_state=RANDOM_STATE)
 dt.fit(X_train, y_train)
 y_pred = dt.predict(X_test)
 
-# ---------- 3. KLAIDŲ PAIEŠKA ----------
 klaidu_indeksai = np.where(y_test != y_pred)[0]
 print(f"\nRasta klaidų: {len(klaidu_indeksai)}")
 
@@ -79,10 +74,8 @@ if len(klaidu_indeksai) == 0:
     print("Sveikiname! Klaidų nerasta. Nėra ką vizualizuoti.")
     exit()
 
-# Paskaičiuojame klasių vidurkius (kad turėtume su kuo lyginti)
 vidurkiai = df_testavimas.groupby('label')[OPTIMALUS_POZYMIAI].mean()
 
-# ---------- 4. VIZUALIZACIJA KIEKVIENAI KLAIDAI ----------
 klasiu_pavadinimai = {0: "Normalus (0)", 2: "Aritmija (2)"}
 
 for i, idx in enumerate(klaidu_indeksai):

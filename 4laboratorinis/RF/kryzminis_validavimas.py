@@ -7,7 +7,6 @@ import json
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import cross_validate, StratifiedKFold
 
-# ---------- NUSTATYMAI ----------
 DUOMENU_DIREKTORIJA = '../duomenys'
 GRAFIKU_DIREKTORIJA = '../grafikai'
 RF_DIREKTORIJA = 'RF'
@@ -18,12 +17,10 @@ OPTIMAL_PARAMS_JSON = os.path.join(GRAFIKU_DIREKTORIJA, RF_DIREKTORIJA, 'RF_opti
 
 os.makedirs(CV_DIREKTORIJA, exist_ok=True)
 
-# ---------- 0. OPTIMALIŲ PARAMETRŲ NUSKAITYMAS ----------
 print("=" * 100)
 print(" KONFIGŪRACIJOS ĮKĖLIMAS ".center(100, "="))
 
 def load_optimal_params(exp_name):
-    """Bandoma ikelti optimizuotus parametrus iš JSON. Jei nėra, naudoja defaults."""
     try:
         with open(OPTIMAL_PARAMS_JSON, 'r', encoding='utf-8') as f:
             params_dict = json.load(f)
@@ -38,7 +35,6 @@ def load_optimal_params(exp_name):
     except FileNotFoundError:
         pass
 
-    # Numatytieji parametrai
     return {
         'n_estimators': 200,
         'max_depth': 10,
@@ -55,7 +51,6 @@ print(f"  min_samples_split: {optimal_params['min_samples_split']}")
 print(f"  min_samples_leaf: {optimal_params['min_samples_leaf']}")
 print(f"  max_features: {optimal_params['max_features']}")
 
-# ---------- 1. DUOMENŲ ĮKELIMAS ----------
 print("-" * 100)
 print(" VYKDOMAS KRYŽMINIS VALIDAVIMAS (10-Fold) ".center(100, " "))
 
@@ -66,7 +61,6 @@ except FileNotFoundError:
     print(f"[KLAIDA] Nerasti duomenų failai aplanke '{DUOMENU_DIREKTORIJA}'.")
     exit()
 
-# Naudojame visus požymius (full dataset)
 visi_pozymiai = [col for col in df_mokymas.columns if col != 'label']
 
 try:
@@ -78,7 +72,6 @@ except KeyError as e:
 
 print(f"Bendra aibė: {X_full.shape[0]} eilučių, {len(visi_pozymiai)} požymiai.")
 
-# ---------- 2. SKAIČIAVIMAI ----------
 cv_strategy = StratifiedKFold(n_splits=10, shuffle=True, random_state=42)
 rf = RandomForestClassifier(
     n_estimators=optimal_params['n_estimators'],
@@ -97,7 +90,6 @@ scoring_metrics = {
     'F1 Score': 'f1_weighted'
 }
 
-# Vykdome validavimą
 results = cross_validate(rf, X_full, y_full, cv=cv_strategy, scoring=scoring_metrics)
 
 # Konvertuojame į DataFrame
@@ -108,7 +100,6 @@ df_results = pd.DataFrame({
     'F1 Score': results['test_F1 Score']
 })
 
-# ---------- 3. DETALI STATISTIKA (Mean, Std, Var, Error) ----------
 print("\n" + "=" * 100)
 print(f" DETALI STATISTIKA (Atsitiktinio medžio, visų požymiai) ".center(100, "="))
 print(f"{'METRIKA':<15} | {'VIDURKIS':<10} | {'STD (Nuokrypis)':<18} | {'VAR (Dispersija)':<18} | {'KLAIDA (Error)':<15}")
@@ -119,19 +110,17 @@ for col in df_results.columns:
 
     mean_val = values.mean()
     std_val = values.std()
-    var_val = std_val ** 2  # Dispersija yra standatinio nuokrypio kvadratas
-    error_val = 1.0 - mean_val # Klaida yra 1 minus vidurkis
+    var_val = std_val ** 2
+    error_val = 1.0 - mean_val
 
     print(f"{col:<15} | {mean_val:.4f}    | {std_val:.4f}            | {var_val:.4f}            | {error_val:.4f}")
 
 print("=" * 100)
 
-# ---------- 4. VIZUALIZACIJA (JUODAI-BALTA) ----------
 df_melted = df_results.melt(var_name='Metrika', value_name='Reikšmė')
 
 plt.figure(figsize=(12, 7))
 
-# Boxplot su juodais rėmeliais ir baltu vidumi
 sns.boxplot(
     x='Metrika',
     y='Reikšmė',
@@ -146,7 +135,6 @@ sns.boxplot(
     flierprops=dict(marker='o', markerfacecolor='black', markersize=5, linestyle='none')
 )
 
-# Stripplot (taškai)
 sns.stripplot(
     x='Metrika',
     y='Reikšmė',

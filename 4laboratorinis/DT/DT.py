@@ -11,7 +11,6 @@ from sklearn.metrics import (
     confusion_matrix, classification_report, roc_curve, auc
 )
 
-# ---------- KONSTANTOS IR NUSTATYMAI ----------
 RANDOM_STATE = 42
 DUOMENU_DIREKTORIJA = '../duomenys'
 GRAFIKU_DIREKTORIJA = '../grafikai'
@@ -19,13 +18,10 @@ DT_DIREKTORIJA = 'DecisionTree'
 JSON_DIREKTORIJA = '../JSON'
 JSON_FAILAS = os.path.join(JSON_DIREKTORIJA, 'geriausias_rinkinys.json')
 
-FIXED_DEPTH_PARAMS = {
-    # "Optimalūs požymiai": 5,
-}
+FIXED_DEPTH_PARAMS = {}
 
 os.makedirs(os.path.join(GRAFIKU_DIREKTORIJA, DT_DIREKTORIJA), exist_ok=True)
 
-# ---------- 1. DUOMENŲ ĮKĖLIMAS ----------
 print("=" * 100)
 print(" 1. DUOMENŲ ĮKĖLIMAS IR PARUOŠIMAS (DECISION TREE) ".center(100, "="))
 
@@ -38,12 +34,10 @@ except FileNotFoundError:
     print(f"[KLAIDA] Nerasti duomenys aplanke '{DUOMENU_DIREKTORIJA}'.")
     exit()
 
-# Išskiriame Target kintamąjį (klases)
 y_mokymas = df_mokymas['label'].values
 y_validavimas = df_validavimas['label'].values
 y_testavimas = df_testavimas['label'].values
 
-# ---------- 2. EKSPERIMENTŲ APRAŠYMAS ----------
 pozymiai_full = [col for col in df_mokymas.columns if col != 'label']
 
 try:
@@ -60,13 +54,11 @@ experiments = {
     "Optimalūs požymiai": pozymiai_subset
 }
 
-# ---------- 3. KONTEINERIAI REZULTATAMS ----------
 roc_data_storage = []
 cm_data_storage = []
 summary_results = []
 visu_eksperimentu_duomenys = []
 
-# ---------- 4. PAGRINDINIS CIKLAS ----------
 for exp_name, features in experiments.items():
     print("\n" + "#" * 100)
     print(f" VYKDOMAS EKSPERIMENTAS: {exp_name} ".center(100, "#"))
@@ -117,7 +109,6 @@ for exp_name, features in experiments.items():
         best_depth = auto_best_depth
         print(f"\n[BEST] Automatiškai pasirinktas depth: {best_depth} (Maksimalus F1={best_val_f1:.4f})")
 
-    # --- GALUTINIS TESTAVIMAS ---
     final_dt = DecisionTreeClassifier(max_depth=best_depth, random_state=RANDOM_STATE)
     final_dt.fit(X_mok, y_mokymas)
     y_test_pred = final_dt.predict(X_test)
@@ -156,11 +147,9 @@ for exp_name, features in experiments.items():
         roc_auc = auc(fpr, tpr)
         roc_data_storage.append({'name': exp_name, 'fpr': fpr, 'tpr': tpr, 'auc': roc_auc})
 
-# ---------- 5. BENDRI GRAFIKAI ----------
 print("\n" + "=" * 100)
 print(" 5. GENERUOJAMI BENDRI GRAFIKAI (ROC IR CM) ".center(100, "="))
 
-# 5.1 ROC
 if roc_data_storage:
     plt.figure(figsize=(10, 8))
     colors = ['#1f77b4', '#ff7f0e']
@@ -180,7 +169,6 @@ if roc_data_storage:
 else:
     print("[INFO] ROC grafikai nesugeneruoti (modelis nepalaiko tikimybių).")
 
-# 5.2 CM
 if cm_data_storage:
     fig, axes = plt.subplots(1, len(cm_data_storage), figsize=(6 * len(cm_data_storage), 6))
     if len(cm_data_storage) == 1:
@@ -205,7 +193,6 @@ if cm_data_storage:
     plt.close()
     print(f"[OK] Sukurtas bendras CM grafikas (grid): {cm_filename}")
 
-# ---------- 6. METRIKŲ SUVESTINĖ ----------
 print("\n" + "=" * 100)
 print(" 6. GENERUOJAMA METRIKŲ SUVESTINĖ (2x2 GRID) ".center(100, "="))
 
@@ -248,7 +235,6 @@ plt.savefig(combined_filename, dpi=300, bbox_inches='tight')
 plt.close()
 print(f"[OK] Sukurtas bendras grafikas: {combined_filename}")
 
-# ---------- 7. SUVESTINĖ LENTELĖ ----------
 df_summary = pd.DataFrame(summary_results)
 df_summary = df_summary[['Dataset', 'Depth', 'Accuracy', 'Precision', 'Recall', 'F1 Score']]
 

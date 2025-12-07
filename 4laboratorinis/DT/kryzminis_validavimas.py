@@ -7,7 +7,6 @@ import seaborn as sns
 from sklearn.model_selection import cross_validate, StratifiedKFold
 from sklearn.tree import DecisionTreeClassifier
 
-# ---------- NUSTATYMAI ----------
 RANDOM_STATE = 42
 DUOMENU_DIREKTORIJA = '../duomenys'
 GRAFIKU_DIREKTORIJA = '../grafikai'
@@ -20,7 +19,6 @@ os.makedirs(CV_DIREKTORIJA, exist_ok=True)
 
 DEPTH_RANGE = range(1, 21)
 
-# ---------- 0. POŽYMIŲ NUSKAITYMAS ----------
 print("=" * 100)
 print(" KONFIGŪRACIJOS ĮKĖLIMAS (DT CV) ".center(100, "="))
 
@@ -37,7 +35,6 @@ except FileNotFoundError:
     OPTIMALUS_POZYMIAI = ["Q_val", "R_val", "S_val", "Q_pos", "R_pos", "S_pos"]
     print("[INFO] JSON nerastas, naudojami numatytieji požymiai.")
 
-# ---------- 1. DUOMENŲ ĮKELIMAS ----------
 print("-" * 100)
 print(" VYKDOMAS KRYŽMINIS VALIDAVIMAS (10-Fold, Decision Tree) ".center(100, " "))
 
@@ -57,7 +54,6 @@ except KeyError as e:
 
 print(f"Bendra aibė: {X_full.shape[0]} eilučių.")
 
-# ---------- 2. SKAIČIAVIMAI ----------
 cv_strategy = StratifiedKFold(n_splits=10, shuffle=True, random_state=RANDOM_STATE)
 
 scoring_metrics = {
@@ -94,7 +90,6 @@ for depth in DEPTH_RANGE:
         geriausias_gylis = depth
         geriausio_gylio_raw = results
 
-# ---------- 3. SUVESTINĖ LENTELĖ ----------
 df_rezultatai = pd.DataFrame(rezultatai_gyliai)
 print("\n" + "=" * 100)
 print(" VIDUTINĖS METRIKOS PAGAL GYLĮ ".center(100, "="))
@@ -103,9 +98,8 @@ print(df_rezultatai.to_string(index=False, float_format="%.4f"))
 
 print(f"\n[BEST] Geriausias gylis pagal vidutinį F1: {geriausias_gylis} (F1={geriausias_f1:.4f})")
 
-# ---------- 4. DETALI STATISTIKA GERIAUSIAM GYLIUI ----------
 print("\n" + "=" * 100)
-print(f" DETALI STATISTIKA (gylys={geriausias_gylis}) ".center(100, "="))
+print(f" DETALI STATISTIKA (gylis={geriausias_gylis}) ".center(100, "="))
 print(f"{'METRIKA':<15} | {'VIDURKIS':<10} | {'STD (Nuokrypis)':<18} | {'VAR (Dispersija)':<18} | {'KLAIDA (Error)':<15}")
 print("-" * 100)
 
@@ -124,7 +118,6 @@ for col in df_best.columns:
     error_val = 1.0 - mean_val
     print(f"{col:<15} | {mean_val:.4f}    | {std_val:.4f}            | {var_val:.4f}            | {error_val:.4f}")
 
-# ---------- 5. VIZUALIZACIJA ----------
 df_melted = df_best.melt(var_name='Metrika', value_name='Reikšmė')
 
 plt.figure(figsize=(12, 7))
@@ -153,7 +146,7 @@ sns.stripplot(
     alpha=0.6
 )
 
-plt.title(f'10-lankstų kryžminis validavimas\n(gylys={geriausias_gylis}, Požymiai: Optimalūs)', fontsize=14, fontweight='bold', color='black')
+plt.title(f'10-lankstų kryžminis validavimas\n(gylis={geriausias_gylis}, Požymiai: Optimalūs)', fontsize=14, fontweight='bold', color='black')
 plt.ylabel('Reikšmė (0.0 - 1.0)', fontsize=12, color='black')
 plt.xlabel('', color='black')
 plt.tick_params(axis='x', colors='black')

@@ -4,26 +4,21 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
 
-# ---------- KONSTANTOS ----------
 RANDOM_STATE = 42
 DUOMENU_DIREKTORIJA = 'duomenys'
 GRAFIKU_DIREKTORIJA = 'grafikai'
 AIBES_DIREKTORIJA = os.path.join(GRAFIKU_DIREKTORIJA, 'aibes')
 JSON_DIREKTORIJA = 'JSON'
-JSON_FAILAS = 'geriausias_rinkinys.json' # Tik failo vardas
+JSON_FAILAS = 'geriausias_rinkinys.json'
 
-# Pilnas kelias iki JSON failo
 JSON_FAILAS_PATH = os.path.join(JSON_DIREKTORIJA, JSON_FAILAS)
 
-# Mūsų nugalėtojai (6 geriausi požymiai)
 BEST_FEATURES = ["Q_val", "R_val", "S_val", "Q_pos", "R_pos", "S_pos"]
 
-# Sukuriame reikalingas direktorijas
 os.makedirs(AIBES_DIREKTORIJA, exist_ok=True)
 os.makedirs(DUOMENU_DIREKTORIJA, exist_ok=True)
-os.makedirs(JSON_DIREKTORIJA, exist_ok=True) # Svarbu: sukuriame JSON aplanką
+os.makedirs(JSON_DIREKTORIJA, exist_ok=True)
 
-# ---------- 1. ĮKELIAME 31D DUOMENIS ----------
 print("=" * 60)
 print(" 1. DUOMENŲ ĮKĖLIMAS ".center(60, "="))
 df_normuota = pd.read_csv(
@@ -33,14 +28,12 @@ df_normuota = pd.read_csv(
 X = df_normuota.drop(columns='label')
 y = df_normuota['label']
 
-# ---------- 2. ĮKELIAME 2D t-SNE DUOMENIS ----------
 df_tsne = pd.read_csv(
     os.path.join(DUOMENU_DIREKTORIJA, 'sugeneruota_aibe_2D_normuota.csv'),
     sep=';'
 )
 p1, p2 = 'dimensija_1', 'dimensija_2'
 
-# ---------- 3. PRADINĖ VISOS AIBĖS VIZUALIZACIJA ----------
 plt.figure(figsize=(7,6))
 for klase in sorted(df_tsne['label'].unique()):
     mask = df_tsne['label'] == klase
@@ -60,23 +53,18 @@ plt.close()
 
 print("✓ Išsaugota pradine_2D_aibe.png")
 
-# ---------- 4. DALIJAME AIBĘ (MOKYMAS / VALIDAVIMAS / TESTAVIMAS) ----------
-# Pirmas padalijimas: atskiriame 20% testavimui
 X_mok_val, X_test, y_mok_val, y_test, tsne_mok_val, tsne_test = train_test_split(
     X, y, df_tsne, test_size=0.2, random_state=RANDOM_STATE, stratify=y
 )
 
-# Antras padalijimas: likusius 80% skeliame į mokymą ir validavimą (dar 20% nuo likučio)
 X_mok, X_val, y_mok, y_val, tsne_mok, tsne_val = train_test_split(
     X_mok_val, y_mok_val, tsne_mok_val,
     test_size=0.2, random_state=RANDOM_STATE, stratify=y_mok_val
 )
 
-# ---------- 5. IŠSAUGOME DUOMENIS ----------
 print("\n" + "=" * 60)
 print(" 5. FAILŲ SAUGOJIMAS ".center(60, "="))
 
-# --- A. Pilni 31D duomenys (Backup ir bendram naudojimui) ---
 df_mok = pd.concat([X_mok, y_mok], axis=1)
 df_val = pd.concat([X_val, y_val], axis=1)
 df_test = pd.concat([X_test, y_test], axis=1)
@@ -87,8 +75,6 @@ df_test.to_csv(os.path.join(DUOMENU_DIREKTORIJA, 'testavimo_aibe.csv'), sep=';',
 
 print("✓ Išsaugotos PILNOS (31 požymio) aibės (mokymo_aibe.csv ir t.t.)")
 
-# --- B. SPECIFINIAI DUOMENYS (Tik 6 geriausi požymiai) ---
-# Sukuriame versijas tik su pasirinktais stulpeliais + label
 cols_to_keep = BEST_FEATURES + ['label']
 
 df_mok_final = df_mok[cols_to_keep]
@@ -101,7 +87,6 @@ df_test_final.to_csv(os.path.join(DUOMENU_DIREKTORIJA, 'eksperimento_testavimo_a
 
 print(f"Išsaugotos OPTIMIZUOTOS (6 požymių) aibės failuose: eksperimento_*_aibe.csv")
 
-# --- C. Atnaujiname JSON failą eksperimentams ---
 config_data = {
     "GERIAUSIAS_MODELIS_6_POZYMIAI": BEST_FEATURES
 }
@@ -112,7 +97,6 @@ with open(JSON_FAILAS_PATH, 'w', encoding='utf-8') as f:
 print(f"Sukurtas konfigūracijos failas: '{JSON_FAILAS_PATH}'")
 
 
-# ---------- 6. VIZUALIZUOJAME 2D AIBES ----------
 def nupiesti_viena(tsne_df, pavadinimas, failas):
     plt.figure(figsize=(7,6))
     n = len(tsne_df)
@@ -167,7 +151,6 @@ nupiesti_viena(tsne_val, "Validavimo aibė", "validavimo_aibe.png")
 nupiesti_viena(tsne_test, "Testavimo aibė", "testavimo_aibe.png")
 nupiesti_bendra(tsne_mok, tsne_val, tsne_test)
 
-# ---------- 7. STATISTIKA ----------
 print("\n=== DUOMENŲ DALIJIMO STATISTIKA ===")
 print(f"Mokymo aibė:      {len(df_mok)} (0: {(y_mok==0).sum()}, 2: {(y_mok==2).sum()})")
 print(f"Validavimo aibė:  {len(df_val)} (0: {(y_val==0).sum()}, 2: {(y_val==2).sum()})")

@@ -7,7 +7,6 @@ import json
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.model_selection import cross_validate, StratifiedKFold
 
-# ---------- NUSTATYMAI ----------
 DUOMENU_DIREKTORIJA = '../duomenys'
 GRAFIKU_DIREKTORIJA = '../grafikai'
 KNN_DIREKTORIJA = 'KNN'
@@ -19,7 +18,6 @@ os.makedirs(CV_DIREKTORIJA, exist_ok=True)
 
 BEST_K = 3
 
-# ---------- 0. POŽYMIŲ NUSKAITYMAS ----------
 print("=" * 100)
 print(" KONFIGŪRACIJOS ĮKĖLIMAS ".center(100, "="))
 
@@ -38,7 +36,6 @@ except FileNotFoundError:
     OPTIMALUS_POZYMIAI = ["Q_val", "R_val", "S_val", "Q_pos", "R_pos", "S_pos"]
     print("[INFO] JSON nerastas, naudojami numatytieji požymiai.")
 
-# ---------- 1. DUOMENŲ ĮKELIMAS ----------
 print("-" * 100)
 print(" VYKDOMAS KRYŽMINIS VALIDAVIMAS (10-Fold) ".center(100, " "))
 
@@ -58,7 +55,6 @@ except KeyError as e:
 
 print(f"Bendra aibė: {X_full.shape[0]} eilučių.")
 
-# ---------- 2. SKAIČIAVIMAI ----------
 cv_strategy = StratifiedKFold(n_splits=10, shuffle=True, random_state=42)
 knn = KNeighborsClassifier(n_neighbors=BEST_K, metric='euclidean')
 
@@ -69,10 +65,8 @@ scoring_metrics = {
     'F1 Score': 'f1_weighted'
 }
 
-# Vykdome validavimą
 results = cross_validate(knn, X_full, y_full, cv=cv_strategy, scoring=scoring_metrics)
 
-# Konvertuojame į DataFrame
 df_results = pd.DataFrame({
     'Accuracy': results['test_Accuracy'],
     'Precision': results['test_Precision'],
@@ -80,7 +74,6 @@ df_results = pd.DataFrame({
     'F1 Score': results['test_F1 Score']
 })
 
-# ---------- 3. DETALI STATISTIKA (Mean, Std, Var, Error) ----------
 print("\n" + "=" * 100)
 print(f" DETALI STATISTIKA (k={BEST_K}) ".center(100, "="))
 print(f"{'METRIKA':<15} | {'VIDURKIS':<10} | {'STD (Nuokrypis)':<18} | {'VAR (Dispersija)':<18} | {'KLAIDA (Error)':<15}")
@@ -91,19 +84,17 @@ for col in df_results.columns:
 
     mean_val = values.mean()
     std_val = values.std()
-    var_val = std_val ** 2  # Dispersija yra standatinio nuokrypio kvadratas
-    error_val = 1.0 - mean_val # Klaida yra 1 minus vidurkis (dažniausiai taikoma Accuracy, bet tinka ir kitiems)
+    var_val = std_val ** 2
+    error_val = 1.0 - mean_val
 
     print(f"{col:<15} | {mean_val:.4f}    | {std_val:.4f}            | {var_val:.4f}            | {error_val:.4f}")
 
 print("=" * 100)
 
-# ---------- 4. VIZUALIZACIJA (JUODAI-BALTA) ----------
 df_melted = df_results.melt(var_name='Metrika', value_name='Reikšmė')
 
 plt.figure(figsize=(12, 7))
 
-# Boxplot su juodais rėmeliais ir baltu vidumi
 sns.boxplot(
     x='Metrika',
     y='Reikšmė',
@@ -118,7 +109,6 @@ sns.boxplot(
     flierprops=dict(marker='o', markerfacecolor='black', markersize=5, linestyle='none')
 )
 
-# Stripplot (taškai)
 sns.stripplot(
     x='Metrika',
     y='Reikšmė',
@@ -137,7 +127,6 @@ plt.tick_params(axis='x', colors='black')
 plt.tick_params(axis='y', colors='black')
 plt.grid(True, axis='y', linestyle='--', alpha=0.5, color='gray')
 
-# Ribos
 y_min = df_melted['Reikšmė'].min()
 plt.ylim(max(0, y_min - 0.02), 1.005)
 
