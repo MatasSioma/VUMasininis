@@ -157,7 +157,7 @@ sns.stripplot(
     alpha=0.6
 )
 
-plt.title(f'10-lanksčio kryžminio validavimo rezultatai\nAtsitiktinis mežys (Visi požymiai)', fontsize=14, fontweight='bold', color='black')
+plt.title(f'10-lanksčio kryžminio validavimo rezultatai\nAtsitiktinio miško modelis (Visi požymiai)', fontsize=14, fontweight='bold', color='black')
 plt.ylabel('Reikšmė (0.0 - 1.0)', fontsize=12, color='black')
 plt.xlabel('', color='black')
 
