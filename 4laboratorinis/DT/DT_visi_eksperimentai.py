@@ -116,7 +116,7 @@ for eksp_pavadinimas, pozymiai in eksperimentai.items():
 
     print(f"  ✓ Atlikta: {eksp_pavadinimas} (Depth={best_depth}, F1={f1:.4f})")
 
-    # --- 3.6. Painiavos matrica ---
+    # --- 3.6. "Confusion" matrica ---
     cm = confusion_matrix(y_test, y_test_pred, labels=[0, 2])
     plt.figure(figsize=(5, 4))
     sns.heatmap(cm, annot=True, fmt='d', cmap='Oranges', cbar=False)
