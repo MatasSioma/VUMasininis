@@ -122,18 +122,18 @@ experiments = {
 # Model configurations - will be populated dynamically
 model_configs = {
     'RF': {
-        'name': 'Random Forest',
+        'name': 'Atsitiktinis medis',
         'params': {}  # Will be filled during processing
     },
     'KNN': {
-        'name': 'K-Nearest Neighbors',
+        'name': 'K-NN',
         'params': {
             'Visi požymiai': {'k': 3},
             'Optimalūs požymiai': {'k': 3}
         }
     },
     'DT': {
-        'name': 'Decision Tree',
+        'name': 'Sprendimų medis',
         'params': {
             'Visi požymiai': {'depth': 5},
             'Optimalūs požymiai': {'depth': 4}
@@ -189,8 +189,8 @@ def plot_decision_boundary(model, X, y, ax, title, feature_names=None):
               c='red', label='Aritmija (2)', edgecolors='k', s=50, alpha=0.7)
 
     ax.set_title(title, fontsize=12, fontweight='bold')
-    ax.set_xlabel('t-SNE Dimensija 1', fontsize=10)
-    ax.set_ylabel('t-SNE Dimensija 2', fontsize=10)
+    ax.set_xlabel('Dimensija 1', fontsize=10)
+    ax.set_ylabel('Dimensija 2', fontsize=10)
     ax.grid(True, alpha=0.3)
 
     # Simple legend
@@ -267,11 +267,12 @@ for model_key, model_info in model_configs.items():
 
         # Plot decision boundary
         ax = axes[idx]
-        title = f"{exp_name}\n{param_str}, Acc: {accuracy:.4f}"
+        # title = f"{exp_name}\n{param_str}, Acc: {accuracy:.4f}"
+        title = f"{exp_name}\n{param_str}"
         plot_decision_boundary(model, X_test_2d, y_test, ax, title)
 
     # Add main title
-    plt.suptitle(f"{model_info['name']} - Decision Boundaries (t-SNE 2D Projection)",
+    plt.suptitle(f"{model_info['name']} - Sprendimo riba (t-SNE 2D)",
                  fontsize=16, fontweight='bold', y=1.02)
     plt.tight_layout()
 
