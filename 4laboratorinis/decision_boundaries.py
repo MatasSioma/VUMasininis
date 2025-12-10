@@ -122,7 +122,7 @@ experiments = {
 # Model configurations - will be populated dynamically
 model_configs = {
     'RF': {
-        'name': 'Atsitiktinis medis',
+        'name': 'Atsitiktinis miškas',
         'params': {}  # Will be filled during processing
     },
     'KNN': {
@@ -267,8 +267,8 @@ for model_key, model_info in model_configs.items():
 
         # Plot decision boundary
         ax = axes[idx]
-        # title = f"{exp_name}\n{param_str}, Acc: {accuracy:.4f}"
-        title = f"{exp_name}\n{param_str}"
+        title = f"{exp_name}\n{param_str}, Acc: {accuracy:.4f}"
+        # title = f"{exp_name}\n{param_str}"
         plot_decision_boundary(model, X_test_2d, y_test, ax, title)
 
     # Add main title
